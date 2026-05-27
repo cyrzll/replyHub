@@ -1,0 +1,6 @@
+PySide6>=6.0.0
+segno>=1.5.0
+neonize>=0.3.18
+pillow>=10.0.0
+protobuf>=4.0.0
+pyinstaller>=6.0.0
