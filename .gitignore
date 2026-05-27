@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env
+
+# PyInstaller build outputs
+build/
+dist/
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Project-specific local database and media stores (sensitive and large files)
+src/data/chat_data/*.db
+src/data/session/*.db
+src/data/theme/*.db
+src/data/user/*.db
+src/data/media/
+
+# IDE configuration folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
