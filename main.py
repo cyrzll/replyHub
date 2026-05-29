@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTabWidget, QGroupBox, QLabel, QLineEdit, QTextEdit, QPlainTextEdit, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox, QSplitter, QStackedWidget,
-    QDialog, QMenu, QScrollArea, QFrame, QListWidget, QListWidgetItem
+    QDialog, QMenu, QScrollArea, QFrame, QListWidget, QListWidgetItem, QCheckBox, QComboBox, QProgressBar
 )
 import segno
 
@@ -35,7 +35,22 @@ from src.style.themes import DARK_STYLESHEET, LIGHT_STYLESHEET
 from src.hooks.bot_thread import BotThread
 from src.lib.jid_helper import parse_jid
 from src.lib.widgets import ProfileCard, AddProfileCard, ChatItemWidget, MessageRowWidget
-from src.lib.dialogs import AddAccountDialog, ScanQRDialog, NewChatDialog, EditMessageDialog
+from src.lib.dialogs import AddAccountDialog, ScanQRDialog, NewChatDialog, EditMessageDialog, ProductDialog
+
+DEFAULT_GEMINI_INSTRUCTION = """Kamu adalah bot Customer Service (CS) toko online yang ramah dan santai (panggil pelanggan dengan "kak").
+Tugas kamu adalah membantu menjawab pertanyaan seputar produk kami, harga, stok, pemesanan, pembayaran, pengiriman, dan foto produk.
+
+Sinonim/Sebutan Produk:
+- 'Kaos Oversize' sering disebut: kaos, baju, atasan.
+- 'celana dalam' sering disebut: celana, cd, bawahan.
+
+Aturan Utama:
+1. Hanya gunakan data katalog produk di bawah ini. Jangan mengarang informasi.
+2. Ketika pelanggan menanyakan daftar produk atau bertanya "ada produk apa saja", berikan daftar nama produk dan harganya secara ramah.
+3. PENTING UNTUK FOTO/GAMBAR: Jika pelanggan meminta foto, gambar, detail, deskripsi, atau ingin melihat produk (contoh: "lihat foto kaos", "fotonya?", "bisa lihat kaos nya?"), kamu WAJIB menuliskan detail produk tersebut secara lengkap, lalu di bagian akhir jawabanmu wajib sertakan tag {{SEND_IMAGE: <id_produk>}} secara persis. Jangan pernah berkata tidak bisa mengirim foto!
+
+Katalog Produk:
+{{products}}"""
 
 
 class MainWindow(QMainWindow):
@@ -282,9 +297,19 @@ class MainWindow(QMainWindow):
         self.menu_rules_btn.clicked.connect(lambda: self.switch_page(2))
         self.menu_rules_btn.setToolTip("Create and edit auto-reply rules for the active account")
 
+        self.menu_gemini_btn = QPushButton("✨ Gemini AI")
+        self.menu_gemini_btn.clicked.connect(lambda: self.switch_page(3))
+        self.menu_gemini_btn.setToolTip("Configure Gemini AI Auto-Responder settings")
+
+        self.menu_products_btn = QPushButton("🛍️ Manage Products")
+        self.menu_products_btn.clicked.connect(lambda: self.switch_page(4))
+        self.menu_products_btn.setToolTip("Manage product catalog, categories, gender, and discounts")
+
         sidebar_layout.addWidget(self.menu_status_btn)
         sidebar_layout.addWidget(self.menu_chat_btn)
         sidebar_layout.addWidget(self.menu_rules_btn)
+        sidebar_layout.addWidget(self.menu_gemini_btn)
+        sidebar_layout.addWidget(self.menu_products_btn)
         sidebar_layout.addStretch()
 
         # Active Profile switcher widget
@@ -345,6 +370,8 @@ class MainWindow(QMainWindow):
         self.setup_bot_control_page()
         self.setup_chat_page()
         self.setup_rules_page()
+        self.setup_gemini_page()
+        self.setup_products_page()
 
         self.app_stack.addWidget(self.workspace_widget)
 
@@ -536,6 +563,8 @@ class MainWindow(QMainWindow):
         self.menu_status_btn.setObjectName("")
         self.menu_chat_btn.setObjectName("")
         self.menu_rules_btn.setObjectName("")
+        self.menu_gemini_btn.setObjectName("")
+        self.menu_products_btn.setObjectName("")
         
         # Set active name
         if index == 0:
@@ -544,6 +573,10 @@ class MainWindow(QMainWindow):
             self.menu_chat_btn.setObjectName("activeMenu")
         elif index == 2:
             self.menu_rules_btn.setObjectName("activeMenu")
+        elif index == 3:
+            self.menu_gemini_btn.setObjectName("activeMenu")
+        elif index == 4:
+            self.menu_products_btn.setObjectName("activeMenu")
             
         # Re-apply stylesheet to force refresh menu button styling
         self.setStyleSheet(self.styleSheet())
@@ -573,10 +606,26 @@ class MainWindow(QMainWindow):
         self.rules_placeholder.setVisible(False)
         self.rules_main_widget.setVisible(True)
         
+        # Gemini Page Placeholder Toggle
+        if hasattr(self, "gemini_placeholder") and hasattr(self, "gemini_main_widget"):
+            self.gemini_placeholder.setVisible(False)
+            self.gemini_main_widget.setVisible(True)
+            self.load_gemini_settings()
+            
+        # Products Page Placeholder Toggle
+        if hasattr(self, "products_placeholder") and hasattr(self, "products_main_widget"):
+            self.products_placeholder.setVisible(False)
+            self.products_main_widget.setVisible(True)
+            self.load_products_into_table()
+        
         # Update titles with selected account name
         display_name = self.get_selected_account_display_name()
         self.log_group.setTitle(f"Live Activity Log ({display_name})")
         self.rules_group.setTitle(f"Rules for {display_name}")
+        if hasattr(self, "gemini_group"):
+            self.gemini_group.setTitle(f"Gemini AI Settings for {display_name}")
+        if hasattr(self, "products_group"):
+            self.products_group.setTitle(f"Products for {display_name}")
         
         # Reload rules list & logs
         self.load_rules_into_table()
@@ -1487,6 +1536,358 @@ class MainWindow(QMainWindow):
         splitter.setSizes([350, 650])
         layout.addWidget(self.rules_main_widget)
         self.workspace_stack.addWidget(page)
+
+    # ==========================================
+    # PAGE 4: GEMINI AI CONFIGURATION VIEW
+    # ==========================================
+    def setup_gemini_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        # Placeholder: shown when no account is selected
+        self.gemini_placeholder = QLabel("Select or add a WhatsApp account from the Accounts page first.")
+        self.gemini_placeholder.setAlignment(Qt.AlignCenter)
+        self.gemini_placeholder.setStyleSheet("color: #8494a7; font-size: 15px; font-weight: bold;")
+        layout.addWidget(self.gemini_placeholder)
+
+        # Main active widget
+        self.gemini_main_widget = QWidget()
+        gemini_layout = QVBoxLayout(self.gemini_main_widget)
+        gemini_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.gemini_group = QGroupBox("Gemini AI Settings")
+        form_layout = QVBoxLayout(self.gemini_group)
+        form_layout.setSpacing(12)
+
+        # Toggle Switch using CheckBox
+        self.gemini_enabled_check = QCheckBox("Enable Gemini AI Auto-Responder")
+        self.gemini_enabled_check.setFont(QFont("Arial", 12, QFont.Bold))
+        self.gemini_enabled_check.setToolTip("Toggle to activate or deactivate Gemini AI automatic replies.")
+        form_layout.addWidget(self.gemini_enabled_check)
+
+        form_layout.addWidget(QLabel("Gemini API Key:"))
+        self.gemini_api_key_input = QLineEdit()
+        self.gemini_api_key_input.setEchoMode(QLineEdit.Password)
+        self.gemini_api_key_input.setPlaceholderText("AIzaSy...")
+        self.gemini_api_key_input.setToolTip("Enter your Google Gemini API Key. You can get it from Google AI Studio.")
+        form_layout.addWidget(self.gemini_api_key_input)
+        
+        form_layout.addWidget(QLabel("Gemini Model:"))
+        self.gemini_model_input = QComboBox()
+        self.gemini_model_input.setEditable(True)
+        self.gemini_model_input.addItems([
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash",
+            "gemini-3.5-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro"
+        ])
+        self.gemini_model_input.setToolTip("Select or type the Gemini model (default: gemini-2.5-flash).")
+        form_layout.addWidget(self.gemini_model_input)
+
+        form_layout.addWidget(QLabel("AI System Instructions (Prompt):"))
+        self.gemini_instruction_input = QTextEdit()
+        self.gemini_instruction_input.setPlaceholderText("Tell the Gemini AI how to behave and what data to use...")
+        self.gemini_instruction_input.setToolTip("Define the personality, response constraints, and knowledge bases for the bot. Use {{products}} tag where you want the dynamic products catalog injected.")
+        form_layout.addWidget(self.gemini_instruction_input)
+
+        # Action Buttons
+        btn_layout = QHBoxLayout()
+        self.gemini_save_btn = QPushButton("Save AI Settings")
+        self.gemini_save_btn.setObjectName("secondaryBtn")
+        self.gemini_save_btn.setFixedWidth(160)
+        self.gemini_save_btn.clicked.connect(self.save_gemini_settings)
+        
+        self.gemini_reset_btn = QPushButton("Reset to Default Prompt")
+        self.gemini_reset_btn.setObjectName("clearBtn")
+        self.gemini_reset_btn.setFixedWidth(180)
+        self.gemini_reset_btn.clicked.connect(self.reset_gemini_instruction_to_default)
+
+        btn_layout.addWidget(self.gemini_save_btn)
+        btn_layout.addWidget(self.gemini_reset_btn)
+        btn_layout.addStretch()
+        form_layout.addLayout(btn_layout)
+
+        gemini_layout.addWidget(self.gemini_group)
+        self.gemini_main_widget.setVisible(False)
+        layout.addWidget(self.gemini_main_widget)
+        self.workspace_stack.addWidget(page)
+
+    # ==========================================
+    # PAGE 5: PRODUCTS CATALOG MANAGEMENT VIEW
+    # ==========================================
+    def setup_products_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        # Placeholder: shown when no account is selected
+        self.products_placeholder = QLabel("Select or add a WhatsApp account from the Accounts page first.")
+        self.products_placeholder.setAlignment(Qt.AlignCenter)
+        self.products_placeholder.setStyleSheet("color: #8494a7; font-size: 15px; font-weight: bold;")
+        layout.addWidget(self.products_placeholder)
+
+        # Main active widget
+        self.products_main_widget = QWidget()
+        prod_main_layout = QVBoxLayout(self.products_main_widget)
+        prod_main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.products_group = QGroupBox("Dynamic Product Catalog")
+        prod_layout = QVBoxLayout(self.products_group)
+        prod_layout.setSpacing(12)
+
+        # Filter and Search Bar
+        filter_bar_layout = QHBoxLayout()
+        filter_bar_layout.setSpacing(10)
+
+        # Search Input
+        self.prod_search_input = QLineEdit()
+        self.prod_search_input.setPlaceholderText("🔎 Search products by name or description...")
+        self.prod_search_input.textChanged.connect(self.filter_products)
+        self.prod_search_input.setFixedWidth(280)
+        filter_bar_layout.addWidget(self.prod_search_input)
+
+        # Category Filter
+        filter_bar_layout.addWidget(QLabel("Category:"))
+        self.prod_category_filter = QComboBox()
+        self.prod_category_filter.addItem("All Categories")
+        self.prod_category_filter.addItems(["Atasan", "Bawahan", "Outerwear", "Aksesoris", "Lainnya"])
+        self.prod_category_filter.currentTextChanged.connect(self.filter_products)
+        self.prod_category_filter.setFixedWidth(140)
+        filter_bar_layout.addWidget(self.prod_category_filter)
+
+        # Gender Filter
+        filter_bar_layout.addWidget(QLabel("Gender:"))
+        self.prod_gender_filter = QComboBox()
+        self.prod_gender_filter.addItem("All Genders")
+        self.prod_gender_filter.addItems(["Unisex", "Pria", "Wanita"])
+        self.prod_gender_filter.currentTextChanged.connect(self.filter_products)
+        self.prod_gender_filter.setFixedWidth(120)
+        filter_bar_layout.addWidget(self.prod_gender_filter)
+
+        filter_bar_layout.addStretch()
+
+        # Add Product Button
+        self.add_product_btn = QPushButton("➕ Add Product")
+        self.add_product_btn.setObjectName("secondaryBtn")
+        self.add_product_btn.setFixedSize(130, 36)
+        self.add_product_btn.clicked.connect(self.on_add_product_clicked)
+        filter_bar_layout.addWidget(self.add_product_btn)
+
+        prod_layout.addLayout(filter_bar_layout)
+
+        # Products Table
+        self.products_table = QTableWidget()
+        self.products_table.setColumnCount(8)
+        self.products_table.setHorizontalHeaderLabels([
+            "ID", "Product Name", "Category", "Gender", "Price", "Discount", "Stock", "Actions"
+        ])
+        
+        # Header Resizing
+        self.products_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents) # ID
+        self.products_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Interactive)      # Product Name
+        self.products_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Interactive)      # Category
+        self.products_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Interactive)      # Gender
+        self.products_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Interactive)      # Price
+        self.products_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.Interactive)      # Discount
+        self.products_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)          # Stock
+        self.products_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeToContents) # Actions
+
+        self.products_table.verticalHeader().setVisible(False)
+        self.products_table.verticalHeader().setDefaultSectionSize(40)
+        self.products_table.setEditTriggers(QTableWidget.NoEditTriggers)
+
+        prod_layout.addWidget(self.products_table)
+        prod_main_layout.addWidget(self.products_group)
+        layout.addWidget(self.products_main_widget)
+        self.workspace_stack.addWidget(page)
+
+    def load_gemini_settings(self):
+        if self.selected_account_id is None:
+            return
+        enabled, api_key, model, instruction = db_manager.get_gemini_settings(self.selected_account_id)
+        self.gemini_enabled_check.setChecked(enabled == 1)
+        self.gemini_api_key_input.setText(api_key or "")
+        
+        # Set Gemini Model
+        idx = self.gemini_model_input.findText(model or "gemini-2.5-flash")
+        if idx >= 0:
+            self.gemini_model_input.setCurrentIndex(idx)
+        else:
+            self.gemini_model_input.setEditText(model or "gemini-2.5-flash")
+            
+        # Check if instructions exist, if not, load default
+        if not instruction:
+            instruction = DEFAULT_GEMINI_INSTRUCTION
+            
+        self.gemini_instruction_input.setText(instruction)
+
+    def save_gemini_settings(self):
+        if self.selected_account_id is None:
+            return
+        enabled = self.gemini_enabled_check.isChecked()
+        api_key = self.gemini_api_key_input.text().strip()
+        model = self.gemini_model_input.currentText().strip() or "gemini-2.5-flash"
+        instruction = self.gemini_instruction_input.toPlainText().strip()
+        
+        db_manager.update_gemini_settings(self.selected_account_id, enabled, api_key, model, instruction)
+        QMessageBox.information(self, "Success", "Gemini settings updated successfully!")
+
+    def reset_gemini_instruction_to_default(self):
+        confirm = QMessageBox.question(
+            self, "Reset Prompt",
+            "Are you sure you want to reset the system instructions to the default CS bot template?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if confirm == QMessageBox.Yes:
+            self.gemini_instruction_input.setText(DEFAULT_GEMINI_INSTRUCTION)
+
+    def filter_products(self):
+        self.load_products_into_table()
+
+    def load_products_into_table(self):
+        if self.selected_account_id is None:
+            return
+            
+        products = db_manager.get_all_products(self.selected_account_id)
+        self.products_table.setRowCount(0)
+        
+        # Get filter values
+        search_query = ""
+        category_filter = "All Categories"
+        gender_filter = "All Genders"
+        
+        if hasattr(self, "prod_search_input"):
+            search_query = self.prod_search_input.text().strip().lower()
+        if hasattr(self, "prod_category_filter"):
+            category_filter = self.prod_category_filter.currentText()
+        if hasattr(self, "prod_gender_filter"):
+            gender_filter = self.prod_gender_filter.currentText()
+            
+        filtered_products = []
+        for prod in products:
+            # prod: (id, name, price, stock, description, image_path, discount, category, gender)
+            prod_id, name, price, stock, description, image_path, discount, category, gender = prod
+            
+            # Check category filter
+            if category_filter != "All Categories":
+                if (category or "").strip() != category_filter:
+                    continue
+                    
+            # Check gender filter
+            if gender_filter != "All Genders":
+                if (gender or "Unisex").strip() != gender_filter:
+                    continue
+                    
+            # Check search query
+            if search_query:
+                name_match = search_query in name.lower()
+                desc_match = search_query in (description or "").lower()
+                if not name_match and not desc_match:
+                    continue
+                    
+            filtered_products.append(prod)
+            
+        for row_idx, (prod_id, name, price, stock, description, image_path, discount, category, gender) in enumerate(filtered_products):
+            self.products_table.insertRow(row_idx)
+            self.products_table.setItem(row_idx, 0, QTableWidgetItem(str(prod_id)))
+            
+            display_name = f"📷 {name}" if image_path else name
+            self.products_table.setItem(row_idx, 1, QTableWidgetItem(display_name))
+            self.products_table.setItem(row_idx, 2, QTableWidgetItem(category or ""))
+            self.products_table.setItem(row_idx, 3, QTableWidgetItem(gender or "Unisex"))
+            self.products_table.setItem(row_idx, 4, QTableWidgetItem(price))
+            
+            # Format discount
+            disc_text = f"{int(discount)}%" if discount > 0 else "-"
+            self.products_table.setItem(row_idx, 5, QTableWidgetItem(disc_text))
+            
+            self.products_table.setItem(row_idx, 6, QTableWidgetItem(stock))
+            
+            # Actions Column (Edit/Delete Buttons)
+            actions_widget = QWidget()
+            actions_layout = QHBoxLayout(actions_widget)
+            actions_layout.setContentsMargins(4, 2, 4, 2)
+            actions_layout.setSpacing(6)
+
+            is_dark = db_manager.get_theme() == "dark"
+            btn_bg = "#242c3d" if is_dark else "#f0f3f8"
+            btn_fg = "#e8ecf1" if is_dark else "#1a1f2e"
+            border_color = "#2d3548" if is_dark else "#dce3ed"
+
+            edit_btn = QPushButton("Edit")
+            edit_btn.setToolTip("Edit this product details")
+            edit_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {btn_bg}; 
+                    color: {btn_fg};
+                    border: 1px solid {border_color};
+                    padding: 4px 10px; 
+                    border-radius: 6px; 
+                    font-weight: normal; 
+                    font-size: 11px;
+                }}
+            """)
+            edit_btn.clicked.connect(
+                lambda _, p_id=prod_id, n=name, p=price, s=stock, d=description, img=image_path, disc=discount, cat=category, gen=gender: 
+                self.on_edit_product_clicked(p_id, n, p, s, d, img, disc, cat, gen)
+            )
+
+            del_btn = QPushButton("Delete")
+            del_btn.setToolTip("Delete this product permanently")
+            del_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent; 
+                    border: 1px solid #8494a7;
+                    color: #8494a7;
+                    padding: 4px 10px; 
+                    border-radius: 6px; 
+                    font-weight: normal; 
+                    font-size: 11px;
+                }}
+            """)
+            del_btn.clicked.connect(lambda _, p_id=prod_id: self.on_delete_product_clicked(p_id))
+
+            actions_layout.addWidget(edit_btn)
+            actions_layout.addWidget(del_btn)
+            self.products_table.setCellWidget(row_idx, 7, actions_widget)
+
+    def on_add_product_clicked(self):
+        if self.selected_account_id is None:
+            return
+            
+        dialog = ProductDialog(parent=self)
+        if dialog.exec() == QDialog.Accepted:
+            name, price, stock, desc, img, discount, category, gender = dialog.get_product_data()
+            if not name or not price or not stock:
+                QMessageBox.warning(self, "Validation Error", "Product Name, Price, and Stock are required.")
+                return
+                
+            db_manager.add_product(self.selected_account_id, name, price, stock, desc, img, discount, category, gender)
+            self.load_products_into_table()
+
+    def on_edit_product_clicked(self, product_id, name, price, stock, description, image_path="", discount=0.0, category="", gender="Unisex"):
+        dialog = ProductDialog(name, price, stock, description, image_path, self, discount, category, gender)
+        if dialog.exec() == QDialog.Accepted:
+            new_name, new_price, new_stock, new_desc, new_img, new_disc, new_cat, new_gen = dialog.get_product_data()
+            if not new_name or not new_price or not new_stock:
+                QMessageBox.warning(self, "Validation Error", "Product Name, Price, and Stock are required.")
+                return
+                
+            db_manager.update_product(product_id, new_name, new_price, new_stock, new_desc, new_img, new_disc, new_cat, new_gen)
+            self.load_products_into_table()
+
+    def on_delete_product_clicked(self, product_id):
+        confirm = QMessageBox.question(
+            self, "Confirm Delete",
+            "Are you sure you want to delete this product from the catalog?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if confirm == QMessageBox.Yes:
+            db_manager.delete_product(product_id)
+            self.load_products_into_table()
 
     # ==========================================
     # BOT CALLBACK SIGNALS

@@ -61,6 +61,64 @@ def init_user_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    
+    # Run migration to add Gemini configuration columns
+    try:
+        cursor.execute("PRAGMA table_info(accounts)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if "gemini_enabled" not in columns:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN gemini_enabled INTEGER DEFAULT 0")
+        if "gemini_api_key" not in columns:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN gemini_api_key TEXT")
+        if "gemini_model" not in columns:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN gemini_model TEXT DEFAULT 'gemini-2.5-flash'")
+        if "gemini_instruction" not in columns:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN gemini_instruction TEXT")
+        
+        # Add Ollama configuration columns
+        if "ollama_enabled" not in columns:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN ollama_enabled INTEGER DEFAULT 0")
+        if "ollama_url" not in columns:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN ollama_url TEXT DEFAULT 'http://localhost:11434'")
+        if "ollama_model" not in columns:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN ollama_model TEXT DEFAULT 'qwen2.5:1.5b'")
+        if "ollama_instruction" not in columns:
+            cursor.execute("ALTER TABLE accounts ADD COLUMN ollama_instruction TEXT")
+    except Exception as ex:
+        print(f"Error migrating accounts database for Gemini/Ollama settings: {ex}")
+
+    # Create products table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            price TEXT NOT NULL,
+            stock TEXT NOT NULL,
+            description TEXT,
+            image_path TEXT,
+            discount REAL DEFAULT 0,
+            category TEXT,
+            gender TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Run migration to add image_path, discount, category, and gender columns to products if not exists
+    try:
+        cursor.execute("PRAGMA table_info(products)")
+        prod_columns = [col[1] for col in cursor.fetchall()]
+        if "image_path" not in prod_columns:
+            cursor.execute("ALTER TABLE products ADD COLUMN image_path TEXT")
+        if "discount" not in prod_columns:
+            cursor.execute("ALTER TABLE products ADD COLUMN discount REAL DEFAULT 0")
+        if "category" not in prod_columns:
+            cursor.execute("ALTER TABLE products ADD COLUMN category TEXT")
+        if "gender" not in prod_columns:
+            cursor.execute("ALTER TABLE products ADD COLUMN gender TEXT")
+    except Exception as ex:
+        print(f"Error migrating products database: {ex}")
+
     conn.commit()
     conn.close()
 
@@ -281,6 +339,139 @@ def update_profile_name(account_id, new_name):
         return True
     except Exception as e:
         print(f"Error updating profile name: {e}")
+        return False
+
+def update_gemini_settings(account_id, enabled, api_key, model, instruction):
+    """Updates the Gemini API configuration settings for an account."""
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE accounts SET gemini_enabled = ?, gemini_api_key = ?, gemini_model = ?, gemini_instruction = ? WHERE id = ?",
+            (1 if enabled else 0, api_key, model, instruction, account_id)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error updating Gemini settings: {e}")
+        return False
+
+def get_gemini_settings(account_id):
+    """Retrieves the Gemini API configuration settings for an account."""
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        cursor.execute("SELECT gemini_enabled, gemini_api_key, gemini_model, gemini_instruction FROM accounts WHERE id = ?", (account_id,))
+        row = cursor.fetchone()
+        conn.close()
+        return row if row else (0, "", "gemini-2.5-flash", "")
+    except Exception as e:
+        print(f"Error getting Gemini settings: {e}")
+        return (0, "", "gemini-2.5-flash", "")
+
+def update_ollama_settings(account_id, enabled, url, model, instruction):
+    """Updates the Ollama API configuration settings for an account."""
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE accounts SET ollama_enabled = ?, ollama_url = ?, ollama_model = ?, ollama_instruction = ? WHERE id = ?",
+            (1 if enabled else 0, url, model, instruction, account_id)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error updating Ollama settings: {e}")
+        return False
+
+def get_ollama_settings(account_id):
+    """Retrieves the Ollama API configuration settings for an account."""
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        cursor.execute("SELECT ollama_enabled, ollama_url, ollama_model, ollama_instruction FROM accounts WHERE id = ?", (account_id,))
+        row = cursor.fetchone()
+        conn.close()
+        return row if row else (0, "http://localhost:11434", "qwen2.5:1.5b", "")
+    except Exception as e:
+        print(f"Error getting Ollama settings: {e}")
+        return (0, "http://localhost:11434", "qwen2.5:1.5b", "")
+
+def get_all_products(account_id):
+    """Retrieves all products for a specific account. Seeds defaults if table is empty for this account."""
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name, price, stock, description, image_path, discount, category, gender FROM products WHERE account_id = ? ORDER BY id ASC", (account_id,))
+        rows = cursor.fetchall()
+        
+        if not rows:
+            # Seed default products
+            default_products = [
+                ("Kaos Oversize", "Rp99.000", "Hitam M, L; Putih L", "cotton combed 24s", 0.0, "Atasan", "Unisex"),
+                ("celana dalam", "Rp199.000", "Navy XL", "fleece tebal", 0.0, "Bawahan", "Unisex")
+            ]
+            for name, price, stock, desc, discount, category, gender in default_products:
+                cursor.execute(
+                    "INSERT INTO products (account_id, name, price, stock, description, image_path, discount, category, gender) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (account_id, name, price, stock, desc, None, discount, category, gender)
+                )
+            conn.commit()
+            # Fetch again
+            cursor.execute("SELECT id, name, price, stock, description, image_path, discount, category, gender FROM products WHERE account_id = ? ORDER BY id ASC", (account_id,))
+            rows = cursor.fetchall()
+            
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"Error getting products: {e}")
+        return []
+
+def add_product(account_id, name, price, stock, description, image_path=None, discount=0.0, category=None, gender=None):
+    """Adds a new product to the catalog."""
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO products (account_id, name, price, stock, description, image_path, discount, category, gender) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (account_id, name, price, stock, description, image_path, discount, category, gender)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error adding product: {e}")
+        return False
+
+def update_product(product_id, name, price, stock, description, image_path=None, discount=0.0, category=None, gender=None):
+    """Updates an existing product in the catalog."""
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE products SET name = ?, price = ?, stock = ?, description = ?, image_path = ?, discount = ?, category = ?, gender = ? WHERE id = ?",
+            (name, price, stock, description, image_path, discount, category, gender, product_id)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error updating product: {e}")
+        return False
+
+def delete_product(product_id):
+    """Deletes a product from the database catalog."""
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error deleting product: {e}")
         return False
 
 def init_chat_store():

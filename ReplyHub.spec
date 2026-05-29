@@ -3,15 +3,16 @@ from PyInstaller.utils.hooks import collect_all
 
 # Collect all dynamic library assets and metadata from neonize package
 datas, binaries, hiddenimports = collect_all('neonize')
+datas_google, binaries_google, hiddenimports_google = collect_all('google')
 
 block_cipher = None
 
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=binaries,
-    datas=datas,
-    hiddenimports=hiddenimports + [
+    binaries=binaries + binaries_google,
+    datas=datas + datas_google,
+    hiddenimports=hiddenimports + hiddenimports_google + [
         'PySide6.QtCore',
         'PySide6.QtGui',
         'PySide6.QtWidgets',

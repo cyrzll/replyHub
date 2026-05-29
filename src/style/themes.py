@@ -98,6 +98,15 @@ DARK_STYLESHEET = """
     QPushButton#secondaryBtn:hover {
         background-color: #4338ca;
     }
+    QPushButton#dangerBtn {
+        background-color: #d4544a;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+    }
+    QPushButton#dangerBtn:hover {
+        background-color: #b93c33;
+    }
     QPushButton#clearBtn {
         background-color: #22222a;
         border: 1px solid #22222a;
@@ -353,6 +362,15 @@ LIGHT_STYLESHEET = """
     }
     QPushButton#secondaryBtn:hover {
         background-color: #4338ca;
+    }
+    QPushButton#dangerBtn {
+        background-color: #d4544a;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+    }
+    QPushButton#dangerBtn:hover {
+        background-color: #b93c33;
     }
     QPushButton#clearBtn {
         background-color: #ffffff;

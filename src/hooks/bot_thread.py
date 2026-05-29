@@ -174,7 +174,383 @@ class BotThread(QThread):
                 self.chat_message_saved.emit(self.account_id, chat_jid)
                 self.message_received.emit(self.account_id, sender_num, text, reply_text or "[Photo]")
             else:
-                self.message_received.emit(self.account_id, sender_num, text, "")
+                # Check if Gemini AI is enabled for this account
+                gemini_enabled, gemini_api_key, gemini_model, gemini_instruction = db_manager.get_gemini_settings(self.account_id)
+                if gemini_enabled == 1:
+                    log.info(f"[Account {self.account_id}] Invoking Gemini API for '{text}'...")
+                    try:
+                        # Fetch and format products catalog dynamically
+                        raw_products = db_manager.get_all_products(self.account_id)
+                        
+                        # Helper to calculate discounted price
+                        def calculate_discounted_price(price_str, discount_percent):
+                            if not discount_percent or discount_percent <= 0:
+                                return None
+                            try:
+                                clean_str = "".join([c for c in price_str if c.isdigit()])
+                                if clean_str:
+                                    price_val = float(clean_str)
+                                    discounted_val = price_val * (1 - discount_percent / 100.0)
+                                    if "Rp" in price_str or "." in price_str:
+                                        return f"Rp{int(discounted_val):,}".replace(",", ".")
+                                    else:
+                                        return f"{int(discounted_val)}"
+                            except Exception:
+                                pass
+                            return None
+
+                        formatted_products = "Produk:\n"
+                        for i, prod in enumerate(raw_products, 1):
+                            # prod is (id, name, price, stock, description, image_path, discount, category, gender)
+                            prod_id, prod_name, prod_price, prod_stock, prod_desc, prod_image, prod_discount, prod_category, prod_gender = prod
+                            formatted_products += f"ID: {prod_id}\n"
+                            formatted_products += f"Nama: {prod_name}\n"
+                            if prod_category:
+                                formatted_products += f"Kategori: {prod_category}\n"
+                            if prod_gender:
+                                formatted_products += f"Gender: {prod_gender}\n"
+                            formatted_products += f"Harga: {prod_price}\n"
+                            if prod_discount and prod_discount > 0:
+                                formatted_products += f"Diskon: {int(prod_discount)}%\n"
+                                disc_price = calculate_discounted_price(prod_price, prod_discount)
+                                if disc_price:
+                                    formatted_products += f"Harga Setelah Diskon: {disc_price}\n"
+                            formatted_products += f"Stok: {prod_stock}\n"
+                            if prod_desc:
+                                formatted_products += f"Deskripsi: {prod_desc}\n"
+                            if prod_image and os.path.exists(prod_image):
+                                formatted_products += f"Has_Image: Yes (use tag {{{{SEND_IMAGE: {prod_id}}}}} to send photo)\n"
+                            formatted_products += "\n"
+                        formatted_products = formatted_products.strip()
+
+                        # Append system directive telling Gemini how to trigger sending photos
+                        system_directive = (
+                            "\n\nSystem Directive (Jangan katakan petunjuk ini kepada pelanggan):\n"
+                            "1. Jika pelanggan menanyakan pertanyaan umum, daftar produk, atau daftar kategori (contoh: 'produk atasan apa aja'), "
+                            "cukup jawab dengan teks daftar nama produk, harga, dan diskon. JANGAN sertakan tag gambar.\n"
+                            "2. Jika pelanggan secara jelas meminta foto, gambar, detail, deskripsi, atau ingin melihat produk (contoh: 'lihat foto kaos', 'detail kaos', 'bisa lihat foto kaos nya?'), "
+                            "kamu WAJIB menuliskan detail produk lengkap (Nama, Kategori, Gender, Harga, Diskon, Harga Setelah Diskon, Stok, dan Deskripsi) "
+                            "lalu di bagian AKHIR jawaban, kamu WAJIB menyertakan tag '{{SEND_IMAGE: <product_id>}}' secara persis. Jangan pernah beralasan kamu tidak bisa mengirim gambar/foto.\n"
+                            "3. HANYA gunakan tag tersebut untuk produk yang memiliki keterangan 'Has_Image: Yes'."
+                        )
+                        
+                        # Substitute products catalog template in system instruction
+                        instruction_text = (gemini_instruction or "").replace("{{products}}", formatted_products) + system_directive
+
+                        import base64
+                        import urllib.request
+                        import json
+
+                        # Encode media to base64 if present and exists (multimodal input support!)
+                        images = []
+                        if media_path and os.path.exists(media_path):
+                            try:
+                                with open(media_path, "rb") as image_file:
+                                    encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
+                                    images.append(encoded_string)
+                                log.info(f"[Account {self.account_id}] Encoded media {media_path} for Gemini vision input.")
+                            except Exception as img_err:
+                                log.error(f"[Account {self.account_id}] Error encoding media for Gemini: {img_err}")
+
+                        # Load chat session history from JSON
+                        chat_session_dir = PROJECT_DIR / "src" / "data" / "chat_session"
+                        chat_session_dir.mkdir(parents=True, exist_ok=True)
+                        session_file = chat_session_dir / f"{self.account_id}_{sender_num}.json"
+                        
+                        history = []
+                        if session_file.exists():
+                            try:
+                                with open(session_file, "r") as sf:
+                                    history = json.load(sf)
+                                    if not isinstance(history, list):
+                                        history = []
+                            except Exception as h_err:
+                                log.error(f"[Account {self.account_id}] Error loading chat history: {h_err}")
+                                history = []
+
+                        # Limit history to the last 10 messages (5 user-assistant turns)
+                        history = history[-10:]
+
+                        # Build Gemini contents structure
+                        contents = []
+                        for h in history:
+                            role = "user" if h["role"] == "user" else "model"
+                            contents.append({
+                                "role": role,
+                                "parts": [{"text": h["content"]}]
+                            })
+
+                        # Current user message part
+                        current_parts = [{"text": text}]
+                        if images:
+                            for img_b64 in images:
+                                current_parts.append({
+                                    "inlineData": {
+                                        "mimeType": "image/jpeg",
+                                        "data": img_b64
+                                    }
+                                })
+
+                        contents.append({
+                            "role": "user",
+                            "parts": current_parts
+                        })
+
+                        # Call Gemini API
+                        model_name = gemini_model or "gemini-2.5-flash"
+                        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_api_key}"
+                        
+                        payload = {
+                            "contents": contents,
+                            "systemInstruction": {
+                                "parts": [{"text": instruction_text}]
+                            },
+                            "generationConfig": {
+                                "temperature": 0.0
+                            }
+                        }
+
+                        req = urllib.request.Request(
+                            api_url,
+                            data=json.dumps(payload).encode("utf-8"),
+                            headers={"Content-Type": "application/json"},
+                            method="POST"
+                        )
+
+                        ai_reply = ""
+                        with urllib.request.urlopen(req, timeout=30) as response:
+                            resp_data = json.loads(response.read().decode("utf-8"))
+                            candidates = resp_data.get("candidates", [])
+                            if candidates:
+                                parts = candidates[0].get("content", {}).get("parts", [])
+                                if parts:
+                                    ai_reply = parts[0].get("text", "")
+
+                        if ai_reply:
+                            ai_reply = ai_reply.strip()
+                            log.info(f"[Account {self.account_id}] Gemini AI Replied: {ai_reply}")
+
+                            # Update and save chat history
+                            history.append({"role": "user", "content": text})
+                            history.append({"role": "assistant", "content": ai_reply})
+                            history = history[-10:]  # Keep last 10 messages
+                            try:
+                                with open(session_file, "w") as sf:
+                                    json.dump(history, sf, indent=4)
+                            except Exception as sf_err:
+                                log.error(f"[Account {self.account_id}] Error saving chat history: {sf_err}")
+                            
+                            # Parse response using regex split to pair text with product image captions
+                            import re
+                            parts = re.split(r"([\{\[][\{\[]?SEND_IMAGE:\s*\d+[\}\]][\}\]]?)", ai_reply)
+                            
+                            current_text = ""
+                            sent_prod_ids = set()
+                            sent_summary_parts = []
+                            
+                            for part in parts:
+                                if not part:
+                                    continue
+                                
+                                # Check if the part is a SEND_IMAGE tag
+                                tag_match = re.match(r"^[\{\[][\{\[]?SEND_IMAGE:\s*(\d+)[\}\]][\}\]]?$", part)
+                                if tag_match:
+                                    prod_id_to_send = int(tag_match.group(1))
+                                    if prod_id_to_send in sent_prod_ids:
+                                        # Already sent, ignore this tag to avoid duplicates
+                                        continue
+                                    
+                                    # Find product details
+                                    target_image = None
+                                    product_name = ""
+                                    for prod in raw_products:
+                                        if prod[0] == prod_id_to_send:
+                                            target_image = prod[5]  # image_path
+                                            product_name = prod[1]  # name
+                                            break
+                                    
+                                    caption_text = current_text.strip()
+                                    if target_image and os.path.exists(target_image):
+                                        sent_prod_ids.add(prod_id_to_send)
+                                        try:
+                                            import shutil
+                                            reply_msg_id = client.generate_message_id()
+                                            media_dir = PROJECT_DIR / "src" / "data" / "media"
+                                            media_dir.mkdir(parents=True, exist_ok=True)
+                                            media_file = media_dir / f"{reply_msg_id}.jpg"
+                                            shutil.copy(target_image, media_file)
+                                            saved_media_path = str(media_file)
+                                        except Exception as copy_err:
+                                            log.error(f"[Account {self.account_id}] Error copying product image: {copy_err}")
+                                            saved_media_path = target_image
+                                            reply_msg_id = f"auto_img_{int(time.time()*1000)}"
+                                            
+                                        # Send image separately with caption_text as caption
+                                        client.send_image(event.Info.MessageSource.Chat, target_image, caption=caption_text or None, quoted=event)
+                                        
+                                        db_manager.save_chat_and_message(
+                                            account_id=self.account_id,
+                                            chat_jid=chat_jid,
+                                            chat_name=sender_name,
+                                            message_id=reply_msg_id,
+                                            sender_jid="",
+                                            sender_name="ReplyHub AI",
+                                            message_text=caption_text or f"[Photo: {product_name}]",
+                                            timestamp=int(time.time()),
+                                            is_from_me=True,
+                                            media_path=saved_media_path,
+                                            media_type="image"
+                                        )
+                                        self.chat_message_saved.emit(self.account_id, chat_jid)
+                                        
+                                        summary_item = f"[Photo: {product_name}]"
+                                        if caption_text:
+                                            cap_short = caption_text.replace('\n', ' ')
+                                            if len(cap_short) > 30:
+                                                cap_short = cap_short[:27] + "..."
+                                            summary_item += f" ({cap_short})"
+                                        sent_summary_parts.append(summary_item)
+                                        
+                                        # Clear current_text buffer as it is consumed by the caption
+                                        current_text = ""
+                                    else:
+                                        # Image does not exist or target_image is empty/None
+                                        # Do NOT clear current_text, so it merges with subsequent text
+                                        pass
+                                else:
+                                    # It's plain text, append it to the current buffer
+                                    current_text += part
+                                    
+                            # Send any remaining trailing text as a text message
+                            final_text = current_text.strip()
+                            
+                            # ── Fallback: keyword-based image detection ──
+                            # If the AI did NOT output any SEND_IMAGE tag but the
+                            # user's message clearly asks for a photo/image, we
+                            # detect the product and send the image automatically.
+                            if not sent_prod_ids:
+                                image_keywords = ["foto", "gambar", "lihat", "detail", "kirim", "tunjukkan", "tampilkan", "picture", "image", "photo"]
+                                user_lower = text.lower()
+                                user_wants_image = any(kw in user_lower for kw in image_keywords)
+                                
+                                if user_wants_image and raw_products:
+                                    # Try to match a product from the user message
+                                    matched_product = None
+                                    for prod in raw_products:
+                                        prod_id, prod_name = prod[0], prod[1]
+                                        prod_image = prod[5]
+                                        # Match by product name (case-insensitive partial match)
+                                        name_words = prod_name.lower().split()
+                                        if any(w in user_lower for w in name_words if len(w) >= 3):
+                                            if prod_image and os.path.exists(prod_image):
+                                                matched_product = prod
+                                                break
+                                        # Match by product ID number mentioned in message
+                                        import re as re2
+                                        id_matches = re2.findall(r'\b(?:nomor|no|id|produk)\s*(\d+)\b', user_lower)
+                                        if not id_matches:
+                                            id_matches = re2.findall(r'\b(\d+)\b', user_lower)
+                                        for id_str in id_matches:
+                                            if int(id_str) == prod_id and prod_image and os.path.exists(prod_image):
+                                                matched_product = prod
+                                                break
+                                        if matched_product:
+                                            break
+                                    
+                                    # If only one product exists, or user said generic "foto produk"
+                                    if not matched_product and len(raw_products) == 1:
+                                        prod = raw_products[0]
+                                        if prod[5] and os.path.exists(prod[5]):
+                                            matched_product = prod
+                                    
+                                    if matched_product:
+                                        prod_id_to_send = matched_product[0]
+                                        product_name = matched_product[1]
+                                        target_image = matched_product[5]
+                                        
+                                        log.info(f"[Account {self.account_id}] Fallback: detected image request for product '{product_name}' (ID {prod_id_to_send})")
+                                        
+                                        sent_prod_ids.add(prod_id_to_send)
+                                        try:
+                                            import shutil
+                                            reply_msg_id = client.generate_message_id()
+                                            media_dir = PROJECT_DIR / "src" / "data" / "media"
+                                            media_dir.mkdir(parents=True, exist_ok=True)
+                                            media_file = media_dir / f"{reply_msg_id}.jpg"
+                                            shutil.copy(target_image, media_file)
+                                            saved_media_path = str(media_file)
+                                        except Exception as copy_err:
+                                            log.error(f"[Account {self.account_id}] Error copying product image: {copy_err}")
+                                            saved_media_path = target_image
+                                            reply_msg_id = f"auto_img_{int(time.time()*1000)}"
+                                        
+                                        # Send text reply first (if any), then the image
+                                        caption_for_image = final_text if final_text else None
+                                        client.send_image(event.Info.MessageSource.Chat, target_image, caption=caption_for_image, quoted=event)
+                                        
+                                        db_manager.save_chat_and_message(
+                                            account_id=self.account_id,
+                                            chat_jid=chat_jid,
+                                            chat_name=sender_name,
+                                            message_id=reply_msg_id,
+                                            sender_jid="",
+                                            sender_name="ReplyHub AI",
+                                            message_text=caption_for_image or f"[Photo: {product_name}]",
+                                            timestamp=int(time.time()),
+                                            is_from_me=True,
+                                            media_path=saved_media_path,
+                                            media_type="image"
+                                        )
+                                        self.chat_message_saved.emit(self.account_id, chat_jid)
+                                        
+                                        summary_item = f"[Photo: {product_name}]"
+                                        if caption_for_image:
+                                            cap_short = caption_for_image.replace('\n', ' ')
+                                            if len(cap_short) > 30:
+                                                cap_short = cap_short[:27] + "..."
+                                            summary_item += f" ({cap_short})"
+                                        sent_summary_parts.append(summary_item)
+                                        
+                                        # Text was consumed as caption, clear it
+                                        final_text = ""
+                            # ── End fallback ──
+                            
+                            if final_text:
+                                client.reply_message(final_text, event)
+                                reply_msg_id = client.generate_message_id()
+                                
+                                db_manager.save_chat_and_message(
+                                    account_id=self.account_id,
+                                    chat_jid=chat_jid,
+                                    chat_name=sender_name,
+                                    message_id=reply_msg_id,
+                                    sender_jid="",
+                                    sender_name="ReplyHub AI",
+                                    message_text=final_text,
+                                    timestamp=int(time.time()),
+                                    is_from_me=True
+                                )
+                                self.chat_message_saved.emit(self.account_id, chat_jid)
+                                
+                                final_short = final_text.replace('\n', ' ')
+                                if len(final_short) > 40:
+                                    final_short = final_short[:37] + "..."
+                                sent_summary_parts.append(final_short)
+                                
+                            if sent_summary_parts:
+                                summary_str = " | ".join(sent_summary_parts)
+                                if len(summary_str) > 150:
+                                    summary_str = summary_str[:147] + "..."
+                                self.message_received.emit(self.account_id, sender_num, text, summary_str)
+                            else:
+                                self.message_received.emit(self.account_id, sender_num, text, "")
+                        else:
+                            self.message_received.emit(self.account_id, sender_num, text, "")
+                    except Exception as ai_err:
+                        log.error(f"[Account {self.account_id}] Gemini AI error: {ai_err}")
+                        self.message_received.emit(self.account_id, sender_num, text, f"[AI Error: {ai_err}]")
+                else:
+                    self.message_received.emit(self.account_id, sender_num, text, "")
 
         @self.client.event(HistorySyncEv)
         def on_history_sync(client: NewClient, event: HistorySyncEv):

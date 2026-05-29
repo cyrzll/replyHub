@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QFont, QPixmap
-from PySide6.QtWidgets import QDialog, QLabel, QLineEdit, QTextEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox
+from PySide6.QtWidgets import QDialog, QLabel, QLineEdit, QTextEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog, QComboBox, QSpinBox
 
 # Import database manager
 import db_manager
@@ -489,3 +489,238 @@ class EditMessageDialog(QDialog):
     
     def get_text(self):
         return self.text_edit.toPlainText().strip()
+
+
+class ProductDialog(QDialog):
+    """Themed dialog for adding or editing a product in the catalog."""
+    def __init__(self, name="", price="", stock="", description="", image_path="", parent=None, discount=0.0, category="", gender="Unisex"):
+        super().__init__(parent)
+        self.setWindowTitle("Product Details")
+        self.setFixedSize(400, 620)
+        
+        is_dark = db_manager.get_theme() == "dark"
+        bg = "#16161a" if is_dark else "#ffffff"
+        fg = "#f9f9fb" if is_dark else "#0f172a"
+        border = "#22222a" if is_dark else "#e2e8f0"
+        input_bg = "#0f0f13" if is_dark else "#f8fafc"
+        accent = "#4f46e5"
+        
+        self.setStyleSheet(f"QDialog {{ background-color: {bg}; border-radius: 12px; }}")
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(10)
+        
+        title_text = "✏️ Edit Product" if name else "➕ Add Product"
+        title = QLabel(title_text)
+        title.setFont(QFont("Arial", 14, QFont.Bold))
+        title.setStyleSheet(f"color: {fg}; background: transparent; border: none;")
+        layout.addWidget(title)
+        
+        # Product Name
+        layout.addWidget(QLabel("Product Name:"))
+        self.name_input = QLineEdit()
+        self.name_input.setText(name)
+        self.name_input.setPlaceholderText("e.g. Kaos Oversize")
+        self.name_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 6px;")
+        layout.addWidget(self.name_input)
+        
+        # Price
+        layout.addWidget(QLabel("Price:"))
+        self.price_input = QLineEdit()
+        self.price_input.setText(price)
+        self.price_input.setPlaceholderText("e.g. Rp99.000")
+        self.price_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 6px;")
+        layout.addWidget(self.price_input)
+        
+        # Stock
+        layout.addWidget(QLabel("Stock:"))
+        self.stock_input = QLineEdit()
+        self.stock_input.setText(stock)
+        self.stock_input.setPlaceholderText("e.g. Hitam M, L; Putih L")
+        self.stock_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 6px;")
+        layout.addWidget(self.stock_input)
+        
+        # Description
+        layout.addWidget(QLabel("Description:"))
+        self.desc_input = QLineEdit()
+        self.desc_input.setText(description)
+        self.desc_input.setPlaceholderText("e.g. cotton combed 24s")
+        self.desc_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 6px;")
+        layout.addWidget(self.desc_input)
+
+        # Style presets for combobox & spinbox
+        combo_style = f"""
+            QComboBox {{
+                background-color: {input_bg};
+                color: {fg};
+                border: 1px solid {border};
+                border-radius: 6px;
+                padding: 6px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {bg};
+                color: {fg};
+                selection-background-color: {accent};
+                selection-color: #ffffff;
+                border: 1px solid {border};
+            }}
+        """
+        spin_style = f"""
+            QSpinBox {{
+                background-color: {input_bg};
+                color: {fg};
+                border: 1px solid {border};
+                border-radius: 6px;
+                padding: 6px;
+            }}
+        """
+
+        # Discount (%)
+        layout.addWidget(QLabel("Discount (%):"))
+        self.discount_input = QSpinBox()
+        self.discount_input.setRange(0, 100)
+        self.discount_input.setValue(int(discount or 0))
+        self.discount_input.setStyleSheet(spin_style)
+        layout.addWidget(self.discount_input)
+        
+        # Category
+        layout.addWidget(QLabel("Category:"))
+        self.category_input = QComboBox()
+        self.category_input.setEditable(True)
+        self.category_input.addItems(["Atasan", "Bawahan", "Outerwear", "Aksesoris", "Lainnya"])
+        self.category_input.setStyleSheet(combo_style)
+        if category:
+            self.category_input.setCurrentText(category)
+        else:
+            self.category_input.setCurrentIndex(0)
+        layout.addWidget(self.category_input)
+        
+        # Gender
+        layout.addWidget(QLabel("Gender:"))
+        self.gender_input = QComboBox()
+        self.gender_input.addItems(["Unisex", "Pria", "Wanita"])
+        self.gender_input.setStyleSheet(combo_style)
+        if gender in ["Unisex", "Pria", "Wanita"]:
+            self.gender_input.setCurrentText(gender)
+        else:
+            self.gender_input.setCurrentText("Unisex")
+        layout.addWidget(self.gender_input)
+
+        # Image chooser
+        layout.addWidget(QLabel("Product Photo (Optional):"))
+        image_layout = QHBoxLayout()
+        display_label_text = Path(image_path).name if image_path else "No photo selected"
+        self.image_path_label = QLabel(display_label_text)
+        self.image_path_label.setStyleSheet(f"color: {'#8494a7' if is_dark else '#64748b'}; font-size: 11px;")
+        
+        self.browse_btn = QPushButton("Browse...")
+        self.browse_btn.setFixedWidth(80)
+        self.browse_btn.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 4px; font-weight: normal; font-size: 11px;")
+        self.browse_btn.clicked.connect(self.browse_image)
+        
+        self.clear_img_btn = QPushButton("Clear")
+        self.clear_img_btn.setFixedWidth(60)
+        self.clear_img_btn.setStyleSheet(f"background-color: transparent; color: #8494a7; border: 1px solid {border}; border-radius: 6px; padding: 4px; font-weight: normal; font-size: 11px;")
+        self.clear_img_btn.clicked.connect(self.clear_image)
+        self.clear_img_btn.setVisible(bool(image_path))
+        
+        image_layout.addWidget(self.image_path_label, 1)
+        image_layout.addWidget(self.browse_btn)
+        image_layout.addWidget(self.clear_img_btn)
+        layout.addLayout(image_layout)
+        
+        # Image Preview
+        self.image_preview = QLabel()
+        self.image_preview.setFixedSize(60, 60)
+        self.image_preview.setAlignment(Qt.AlignCenter)
+        self.image_preview.setStyleSheet(f"border: 1px dashed {border}; border-radius: 4px; background: transparent;")
+        self.image_preview.setVisible(False)
+        layout.addWidget(self.image_preview, 0, Qt.AlignCenter)
+        
+        self.selected_image_path = image_path
+        if image_path:
+            self.update_preview(image_path)
+        
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(10)
+        btn_layout.setContentsMargins(0, 10, 0, 0)
+        
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {'#94a3b8' if is_dark else '#64748b'};
+                border: 1px solid {border};
+                border-radius: 8px;
+                padding: 8px 18px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {input_bg};
+            }}
+        """)
+        cancel_btn.clicked.connect(self.reject)
+        
+        save_btn = QPushButton("Save")
+        save_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {accent};
+                color: #ffffff;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 18px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: #4338ca;
+            }}
+        """)
+        save_btn.clicked.connect(self.accept)
+        
+        btn_layout.addStretch()
+        btn_layout.addWidget(cancel_btn)
+        btn_layout.addWidget(save_btn)
+        layout.addLayout(btn_layout)
+        
+    def browse_image(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Product Photo", "", "Images (*.png *.jpg *.jpeg *.webp)"
+        )
+        if file_path:
+            self.selected_image_path = file_path
+            self.image_path_label.setText(Path(file_path).name)
+            self.clear_img_btn.setVisible(True)
+            self.update_preview(file_path)
+
+    def clear_image(self):
+        self.selected_image_path = ""
+        self.image_path_label.setText("No photo selected")
+        self.clear_img_btn.setVisible(False)
+        self.image_preview.setVisible(False)
+        self.image_preview.clear()
+
+    def update_preview(self, path):
+        if not path or not Path(path).exists():
+            self.image_preview.setVisible(False)
+            return
+        pixmap = QPixmap(path)
+        if not pixmap.isNull():
+            self.image_preview.setPixmap(
+                pixmap.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+            self.image_preview.setVisible(True)
+        else:
+            self.image_preview.setVisible(False)
+
+    def get_product_data(self):
+        return (
+            self.name_input.text().strip(),
+            self.price_input.text().strip(),
+            self.stock_input.text().strip(),
+            self.desc_input.text().strip(),
+            self.selected_image_path,
+            float(self.discount_input.value()),
+            self.category_input.currentText().strip(),
+            self.gender_input.currentText().strip()
+        )
