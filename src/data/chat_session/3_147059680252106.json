@@ -1,0 +1,18 @@
+[
+    {
+        "role": "user",
+        "content": "Min bisa liht semua produknya?"
+    },
+    {
+        "role": "assistant",
+        "content": "Tentu kak, ini daftar produknya ya \ud83d\ude0a\n\nuntuk atasan\n1. Kaos Oversize (Harga: Rp99.000, Diskon: 20%, Harga Setelah Diskon: Rp79.200)\n\nuntuk bawahan\n1. celana dalam (Harga: Rp199.000, Diskon: 10%, Harga Setelah Diskon: Rp179.100)"
+    },
+    {
+        "role": "user",
+        "content": "Bisa lihat produk kaos?"
+    },
+    {
+        "role": "assistant",
+        "content": "Tentu kak, ini detail produk Kaos Oversize ya:\n\nNama: Kaos Oversize\nKategori: Atasan\nGender: Unisex\nHarga: Rp99.000\nDiskon: 20%\nHarga Setelah Diskon: Rp79.200\nStok: Hitam M, L; Putih L\nDeskripsi: cotton combed 24s\n{{SEND_IMAGE: 1}}"
+    }
+]

@@ -1,30 +1,6 @@
 [
     {
         "role": "user",
-        "content": "bisa lihat semua produknya min?"
-    },
-    {
-        "role": "assistant",
-        "content": "Tentu saja, berikut adalah daftar produk kami:\n\n1. **Kaos Oversize**\n   - Kategori: Atasan\n   - Gender: Unisex\n   - Harga: Rp99.000\n   - Diskon: 20%\n   - Stok: Hitam M, L; Putih L\n\n2. **Celana dalam**\n   - Kategori: Bawahan\n   - Gender: Unisex\n   - Harga: Rp199.000\n   - Diskon: 10%\n   - Stok: Navy XL\n\nJika Anda tertarik untuk melihat gambar produk tersebut, silakan klik tombol \"lihat foto kaos\" di atas dan saya akan mengirimkan gambar secara instan.\n\nAnda juga bisa meminta informasi lebih lanjut tentang produk lain dengan menanyakan nama produk yang ingin Anda lihat."
-    },
-    {
-        "role": "user",
-        "content": ".menu"
-    },
-    {
-        "role": "assistant",
-        "content": "Halo kak, ini daftar produk yang tersedia di toko kami:\n\nuntuk atasan\n1. Kaos Oversize (Harga: Rp99.000, Diskon: 20%, Harga Setelah Diskon: Rp79.200)\n\nuntuk bawahan\n1. celana dalam (Harga: Rp199.000, Diskon: 10%, Harga Setelah Diskon: Rp179.100)\n\nAda yang mau ditanyakan lagi kak? \ud83d\ude0a"
-    },
-    {
-        "role": "user",
-        "content": "foto nomer 1"
-    },
-    {
-        "role": "assistant",
-        "content": "Oke kak, ini detail produknya ya:\n\n**Nama:** Kaos Oversize\n**Kategori:** Atasan\n**Gender:** Unisex\n**Harga:** Rp99.000\n**Diskon:** 20%\n**Harga Setelah Diskon:** Rp79.200\n**Stok:** Hitam M, L; Putih L\n**Deskripsi:** cotton combed 24s\n\n{{SEND_IMAGE: 1}}"
-    },
-    {
-        "role": "user",
         "content": "hai min"
     },
     {
@@ -38,5 +14,29 @@
     {
         "role": "assistant",
         "content": "Halo kak, ini daftar produk yang tersedia di toko kami:\n\nuntuk atasan\n1. Kaos Oversize (Harga: Rp99.000, Diskon: 20%, Harga Setelah Diskon: Rp79.200)\n\nuntuk bawahan\n1. celana dalam (Harga: Rp199.000, Diskon: 10%, Harga Setelah Diskon: Rp179.100)\n\nAda yang mau ditanyakan lagi kak? \ud83d\ude0a"
+    },
+    {
+        "role": "user",
+        "content": "halo min?"
+    },
+    {
+        "role": "assistant",
+        "content": "Maaf kak, saya hanya bisa membantu pertanyaan seputar produk dan pemesanan."
+    },
+    {
+        "role": "user",
+        "content": "halo min, bisa lihat semua produknya?"
+    },
+    {
+        "role": "assistant",
+        "content": "Halo kak, ini daftar produk yang tersedia di toko kami:\n\nuntuk atasan\n1. Kaos Oversize (Harga: Rp99.000, Diskon: 20%, Harga Setelah Diskon: Rp79.200)\n\nuntuk bawahan\n1. celana dalam (Harga: Rp199.000, Diskon: 10%, Harga Setelah Diskon: Rp179.100)\n\nAda yang mau ditanyakan lagi kak? \ud83d\ude0a"
+    },
+    {
+        "role": "user",
+        "content": "mau lihat foto produk nomor 1"
+    },
+    {
+        "role": "assistant",
+        "content": "Oke kak, ini detail produknya ya:\n\n**Nama:** Kaos Oversize\n**Kategori:** Atasan\n**Gender:** Unisex\n**Harga:** Rp99.000\n**Diskon:** 20%\n**Harga Setelah Diskon:** Rp79.200\n**Stok:** Hitam M, L; Putih L\n**Deskripsi:** cotton combed 24s\n\n{{SEND_IMAGE: 1}}"
     }
 ]
