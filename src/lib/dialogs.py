@@ -55,7 +55,7 @@ class AddAccountDialog(QDialog):
         self.qr_label = QLabel("Initializing QR Code...")
         self.qr_label.setFixedSize(260, 260)
         self.qr_label.setAlignment(Qt.AlignCenter)
-        self.qr_label.setStyleSheet("border: 2px dashed #2d3548; border-radius: 8px; color: #8494a7;")
+        self.qr_label.setStyleSheet("border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b;")
         qr_layout.addWidget(self.qr_label, 0, Qt.AlignCenter)
         
         self.status_label = QLabel("Establishing secure connection...")
@@ -125,23 +125,23 @@ class AddAccountDialog(QDialog):
     def apply_dialog_theme(self, is_dark):
         if is_dark:
             self.setStyleSheet("""
-                QDialog { background-color: #0f0f13; }
-                QLabel { color: #f9f9fb; }
-                QLineEdit { background-color: #16161a; border: 1px solid #22222a; border-radius: 6px; padding: 8px; color: #f9f9fb; }
-                QPushButton { background-color: #4f46e5; color: #ffffff; border: none; border-radius: 6px; padding: 10px; font-weight: bold; }
-                QPushButton:hover { background-color: #4338ca; }
-                QPushButton#clearBtn { background-color: #22222a; color: #f9f9fb; border: 1px solid #22222a; border-radius: 6px; }
-                QPushButton#clearBtn:hover { background-color: #2d2d37; }
+                QDialog { background-color: #1e1e24; }
+                QLabel { color: #ffffff; font-family: 'Poppins', sans-serif; }
+                QLineEdit { background-color: #27272a; border: 1px solid #3f3f46; border-radius: 8px; padding: 8px; color: #ffffff; }
+                QPushButton { background-color: #ffffff; color: #000000; border: none; border-radius: 8px; padding: 10px; font-weight: bold; }
+                QPushButton:hover { background-color: #e2e8f0; }
+                QPushButton#clearBtn { background-color: #27272a; color: #ffffff; border: 1px solid #3f3f46; border-radius: 8px; }
+                QPushButton#clearBtn:hover { background-color: #3f3f46; }
             """)
         else:
             self.setStyleSheet("""
-                QDialog { background-color: #f8fafc; }
-                QLabel { color: #0f172a; }
-                QLineEdit { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; color: #0f172a; }
-                QPushButton { background-color: #4f46e5; color: #ffffff; border: none; border-radius: 6px; padding: 10px; font-weight: bold; }
-                QPushButton:hover { background-color: #4338ca; }
-                QPushButton#clearBtn { background-color: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 6px; }
-                QPushButton#clearBtn:hover { background-color: #f1f5f9; }
+                QDialog { background-color: #ffffff; }
+                QLabel { color: #0f172a; font-family: 'Poppins', sans-serif; }
+                QLineEdit { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; color: #0f172a; }
+                QPushButton { background-color: #0f172a; color: #ffffff; border: none; border-radius: 8px; padding: 10px; font-weight: bold; }
+                QPushButton:hover { background-color: #1e293b; }
+                QPushButton#clearBtn { background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; }
+                QPushButton#clearBtn:hover { background-color: #f8fafc; border-color: #94a3b8; }
             """)
 
     def on_qr_received(self, account_id, qr_data):
@@ -155,7 +155,7 @@ class AddAccountDialog(QDialog):
                 pixmap = QPixmap()
                 if pixmap.loadFromData(out.getvalue()):
                     self.qr_label.setPixmap(pixmap.scaled(240, 240, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-                    self.qr_label.setStyleSheet("background-color: #ffffff; border: 1px solid #2d3548; border-radius: 8px;")
+                    self.qr_label.setStyleSheet("background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;")
                     self.status_label.setText("Scan the QR code with WhatsApp Linked Devices to link account.")
                     self.status_label.setStyleSheet("color: #3daa6d; font-weight: bold; font-size: 12px;")
                 else:
@@ -257,7 +257,7 @@ class ScanQRDialog(QDialog):
         self.qr_label = QLabel("Generating QR...")
         self.qr_label.setFixedSize(220, 220)
         self.qr_label.setAlignment(Qt.AlignCenter)
-        self.qr_label.setStyleSheet("border: 2px dashed #2d3548; border-radius: 8px; color: #8494a7;")
+        self.qr_label.setStyleSheet("border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b;")
         layout.addWidget(self.qr_label, 0, Qt.AlignCenter)
         
         self.desc_label = QLabel("Scan this QR code with WhatsApp on your phone to connect.")
@@ -272,7 +272,7 @@ class ScanQRDialog(QDialog):
         
         is_dark = db_manager.get_theme() == "dark"
         self.apply_theme(is_dark)
-
+ 
     def reject(self):
         if self.main_window:
             self.main_window.stop_bot_thread(self.account_id)
@@ -281,17 +281,17 @@ class ScanQRDialog(QDialog):
     def apply_theme(self, is_dark):
         if is_dark:
             self.setStyleSheet("""
-                QDialog { background-color: #0f0f13; }
-                QLabel { color: #f9f9fb; }
-                QPushButton { background-color: #22222a; color: #f9f9fb; border: 1px solid #22222a; border-radius: 6px; padding: 8px; font-weight: bold; }
-                QPushButton:hover { background-color: #2d2d37; }
+                QDialog { background-color: #1e1e24; }
+                QLabel { color: #ffffff; }
+                QPushButton { background-color: #ffffff; color: #000000; border: none; border-radius: 8px; padding: 8px; font-weight: bold; }
+                QPushButton:hover { background-color: #e2e8f0; }
             """)
         else:
             self.setStyleSheet("""
-                QDialog { background-color: #f8fafc; }
+                QDialog { background-color: #ffffff; }
                 QLabel { color: #0f172a; }
-                QPushButton { background-color: #ffffff; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; font-weight: bold; }
-                QPushButton:hover { background-color: #f1f5f9; }
+                QPushButton { background-color: #0f172a; color: #ffffff; border: none; border-radius: 8px; padding: 8px; font-weight: bold; }
+                QPushButton:hover { background-color: #1e293b; }
             """)
             
     def update_qr(self, qr_data):
@@ -304,7 +304,7 @@ class ScanQRDialog(QDialog):
             pixmap = QPixmap()
             if pixmap.loadFromData(out.getvalue()):
                 self.qr_label.setPixmap(pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-                self.qr_label.setStyleSheet("background-color: #ffffff; border: 1px solid #2d3548; border-radius: 8px;")
+                self.qr_label.setStyleSheet("background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;")
         except Exception as e:
             log.error(f"Error rendering QR in dialog: {e}")
 
@@ -317,13 +317,13 @@ class NewChatDialog(QDialog):
         self.setFixedSize(360, 210)
         
         is_dark = db_manager.get_theme() == "dark"
-        bg = "#16161a" if is_dark else "#ffffff"
-        fg = "#f9f9fb" if is_dark else "#0f172a"
-        border = "#22222a" if is_dark else "#e2e8f0"
-        input_bg = "#0f0f13" if is_dark else "#f8fafc"
-        accent = "#4f46e5"
+        bg = "#1e1e24" if is_dark else "#ffffff"
+        fg = "#ffffff" if is_dark else "#0f172a"
+        border = "#3f3f46" if is_dark else "#cbd5e1"
+        input_bg = "#27272a" if is_dark else "#ffffff"
+        accent = "#ffffff" if is_dark else "#0f172a"
         
-        self.setStyleSheet(f"QDialog {{ background-color: {bg}; border-radius: 12px; }}")
+        self.setStyleSheet(f"QDialog {{ background-color: {bg}; border: 1px solid {border}; border-radius: 12px; }}")
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -350,9 +350,6 @@ class NewChatDialog(QDialog):
                 border-radius: 8px;
                 padding: 8px;
             }}
-            QLineEdit:focus {{
-                border: 1px solid {accent};
-            }}
         """)
         layout.addWidget(self.phone_input)
         
@@ -363,14 +360,15 @@ class NewChatDialog(QDialog):
         cancel_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
-                color: {'#94a3b8' if is_dark else '#64748b'};
+                color: {fg};
                 border: 1px solid {border};
                 border-radius: 8px;
                 padding: 8px 18px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: {input_bg};
+                background-color: {'#3f3f46' if is_dark else '#f8fafc'};
+                border-color: {'#52525b' if is_dark else '#94a3b8'};
             }}
         """)
         cancel_btn.clicked.connect(self.reject)
@@ -379,14 +377,15 @@ class NewChatDialog(QDialog):
         start_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {accent};
-                color: #ffffff;
+                color: {bg};
                 border: none;
                 border-radius: 8px;
                 padding: 8px 18px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: #4338ca;
+                background-color: {'#e2e8f0' if is_dark else '#1e293b'};
+                color: {bg if is_dark else '#ffffff'};
             }}
         """)
         start_btn.clicked.connect(self.accept)
@@ -411,15 +410,16 @@ class EditMessageDialog(QDialog):
         self.setFixedSize(400, 240)
         
         is_dark = db_manager.get_theme() == "dark"
-        bg = "#16161a" if is_dark else "#ffffff"
-        fg = "#f9f9fb" if is_dark else "#0f172a"
-        border = "#22222a" if is_dark else "#e2e8f0"
-        input_bg = "#0f0f13" if is_dark else "#f8fafc"
-        accent = "#4f46e5"
+        bg = "#1e1e24" if is_dark else "#ffffff"
+        fg = "#ffffff" if is_dark else "#0f172a"
+        border = "#3f3f46" if is_dark else "#cbd5e1"
+        input_bg = "#27272a" if is_dark else "#ffffff"
+        accent = "#ffffff" if is_dark else "#0f172a"
         
         self.setStyleSheet(f"""
             QDialog {{
                 background-color: {bg};
+                border: 1px solid {border};
                 border-radius: 12px;
             }}
         """)
@@ -430,7 +430,7 @@ class EditMessageDialog(QDialog):
         
         title = QLabel("✏️ Edit Message")
         title.setFont(QFont("Arial", 14, QFont.Bold))
-        title.setStyleSheet(f"color: {fg};")
+        title.setStyleSheet(f"color: {fg}; background: transparent; border: none;")
         layout.addWidget(title)
         
         self.text_edit = QTextEdit()
@@ -454,14 +454,15 @@ class EditMessageDialog(QDialog):
         cancel_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
-                color: #8494a7;
+                color: {fg};
                 border: 1px solid {border};
                 border-radius: 8px;
                 padding: 8px 18px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: {input_bg};
+                background-color: {'#3f3f46' if is_dark else '#f8fafc'};
+                border-color: {'#52525b' if is_dark else '#94a3b8'};
             }}
         """)
         cancel_btn.clicked.connect(self.reject)
@@ -470,14 +471,15 @@ class EditMessageDialog(QDialog):
         save_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {accent};
-                color: #ffffff;
+                color: {bg};
                 border: none;
                 border-radius: 8px;
                 padding: 8px 18px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: #3b8ad8;
+                background-color: {'#e2e8f0' if is_dark else '#1e293b'};
+                color: {bg if is_dark else '#ffffff'};
             }}
         """)
         save_btn.clicked.connect(self.accept)
@@ -499,13 +501,13 @@ class ProductDialog(QDialog):
         self.setFixedSize(400, 620)
         
         is_dark = db_manager.get_theme() == "dark"
-        bg = "#16161a" if is_dark else "#ffffff"
-        fg = "#f9f9fb" if is_dark else "#0f172a"
-        border = "#22222a" if is_dark else "#e2e8f0"
-        input_bg = "#0f0f13" if is_dark else "#f8fafc"
-        accent = "#4f46e5"
+        bg = "#1e1e24" if is_dark else "#ffffff"
+        fg = "#ffffff" if is_dark else "#0f172a"
+        border = "#3f3f46" if is_dark else "#cbd5e1"
+        input_bg = "#27272a" if is_dark else "#ffffff"
+        accent = "#ffffff" if is_dark else "#0f172a"
         
-        self.setStyleSheet(f"QDialog {{ background-color: {bg}; border-radius: 12px; }}")
+        self.setStyleSheet(f"QDialog {{ background-color: {bg}; border: 1px solid {border}; border-radius: 12px; }}")
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -522,7 +524,7 @@ class ProductDialog(QDialog):
         self.name_input = QLineEdit()
         self.name_input.setText(name)
         self.name_input.setPlaceholderText("e.g. Kaos Oversize")
-        self.name_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 6px;")
+        self.name_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 8px; padding: 6px;")
         layout.addWidget(self.name_input)
         
         # Price
@@ -530,7 +532,7 @@ class ProductDialog(QDialog):
         self.price_input = QLineEdit()
         self.price_input.setText(price)
         self.price_input.setPlaceholderText("e.g. Rp99.000")
-        self.price_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 6px;")
+        self.price_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 8px; padding: 6px;")
         layout.addWidget(self.price_input)
         
         # Stock
@@ -538,7 +540,7 @@ class ProductDialog(QDialog):
         self.stock_input = QLineEdit()
         self.stock_input.setText(stock)
         self.stock_input.setPlaceholderText("e.g. Hitam M, L; Putih L")
-        self.stock_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 6px;")
+        self.stock_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 8px; padding: 6px;")
         layout.addWidget(self.stock_input)
         
         # Description
@@ -546,7 +548,7 @@ class ProductDialog(QDialog):
         self.desc_input = QLineEdit()
         self.desc_input.setText(description)
         self.desc_input.setPlaceholderText("e.g. cotton combed 24s")
-        self.desc_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 6px;")
+        self.desc_input.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 8px; padding: 6px;")
         layout.addWidget(self.desc_input)
 
         # Style presets for combobox & spinbox
@@ -555,14 +557,14 @@ class ProductDialog(QDialog):
                 background-color: {input_bg};
                 color: {fg};
                 border: 1px solid {border};
-                border-radius: 6px;
+                border-radius: 8px;
                 padding: 6px;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {bg};
                 color: {fg};
-                selection-background-color: {accent};
-                selection-color: #ffffff;
+                selection-background-color: {'#3f3f46' if is_dark else '#f1f5f9'};
+                selection-color: {fg};
                 border: 1px solid {border};
             }}
         """
@@ -571,7 +573,7 @@ class ProductDialog(QDialog):
                 background-color: {input_bg};
                 color: {fg};
                 border: 1px solid {border};
-                border-radius: 6px;
+                border-radius: 8px;
                 padding: 6px;
             }}
         """
@@ -612,16 +614,16 @@ class ProductDialog(QDialog):
         image_layout = QHBoxLayout()
         display_label_text = Path(image_path).name if image_path else "No photo selected"
         self.image_path_label = QLabel(display_label_text)
-        self.image_path_label.setStyleSheet(f"color: {'#8494a7' if is_dark else '#64748b'}; font-size: 11px;")
+        self.image_path_label.setStyleSheet(f"color: {'#94a3b8' if is_dark else '#64748b'}; font-size: 11px;")
         
         self.browse_btn = QPushButton("Browse...")
         self.browse_btn.setFixedWidth(80)
-        self.browse_btn.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 6px; padding: 4px; font-weight: normal; font-size: 11px;")
+        self.browse_btn.setStyleSheet(f"background-color: {input_bg}; color: {fg}; border: 1px solid {border}; border-radius: 8px; padding: 4px; font-weight: normal; font-size: 11px;")
         self.browse_btn.clicked.connect(self.browse_image)
         
         self.clear_img_btn = QPushButton("Clear")
         self.clear_img_btn.setFixedWidth(60)
-        self.clear_img_btn.setStyleSheet(f"background-color: transparent; color: #8494a7; border: 1px solid {border}; border-radius: 6px; padding: 4px; font-weight: normal; font-size: 11px;")
+        self.clear_img_btn.setStyleSheet(f"background-color: transparent; color: {fg}; border: 1px solid {border}; border-radius: 8px; padding: 4px; font-weight: normal; font-size: 11px;")
         self.clear_img_btn.clicked.connect(self.clear_image)
         self.clear_img_btn.setVisible(bool(image_path))
         
@@ -634,7 +636,7 @@ class ProductDialog(QDialog):
         self.image_preview = QLabel()
         self.image_preview.setFixedSize(60, 60)
         self.image_preview.setAlignment(Qt.AlignCenter)
-        self.image_preview.setStyleSheet(f"border: 1px dashed {border}; border-radius: 4px; background: transparent;")
+        self.image_preview.setStyleSheet(f"border: 1px solid {border}; border-radius: 8px; background: transparent;")
         self.image_preview.setVisible(False)
         layout.addWidget(self.image_preview, 0, Qt.AlignCenter)
         
@@ -650,14 +652,15 @@ class ProductDialog(QDialog):
         cancel_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
-                color: {'#94a3b8' if is_dark else '#64748b'};
+                color: {fg};
                 border: 1px solid {border};
                 border-radius: 8px;
                 padding: 8px 18px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: {input_bg};
+                background-color: {'#3f3f46' if is_dark else '#f8fafc'};
+                border-color: {'#52525b' if is_dark else '#94a3b8'};
             }}
         """)
         cancel_btn.clicked.connect(self.reject)
@@ -666,14 +669,15 @@ class ProductDialog(QDialog):
         save_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {accent};
-                color: #ffffff;
+                color: {bg};
                 border: none;
                 border-radius: 8px;
                 padding: 8px 18px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: #4338ca;
+                background-color: {'#e2e8f0' if is_dark else '#1e293b'};
+                color: {bg if is_dark else '#ffffff'};
             }}
         """)
         save_btn.clicked.connect(self.accept)

@@ -24,17 +24,12 @@ class ProfileCard(QFrame):
         layout.setSpacing(10)
         
         self.avatar = QLabel()
+        self.avatar.setObjectName("profileAvatar")
         self.avatar.setFixedSize(70, 70)
         self.avatar.setAlignment(Qt.AlignCenter)
         self.avatar.setFont(QFont("Arial", 28, QFont.Bold))
         initial = name[0].upper() if name else "N"
         self.avatar.setText(initial)
-        
-        self.avatar.setStyleSheet("""
-            background-color: #4f46e5;
-            color: #ffffff;
-            border-radius: 35px;
-        """)
         layout.addWidget(self.avatar, 0, Qt.AlignCenter)
         
         self.name_label = QLabel(name or "New Account")
@@ -89,54 +84,64 @@ class ProfileCard(QFrame):
         if is_dark:
             self.setStyleSheet("""
                 QFrame#profileCard {
-                    background-color: #16161a;
-                    border: 1px solid #22222a;
-                    border-radius: 10px;
+                    background-color: #1e1e24;
+                    border: 1px solid #3f3f46;
+                    border-radius: 12px;
                 }
                 QFrame#profileCard:hover {
-                    background-color: #22222a;
-                    border: 1px solid #6366f1;
+                    background-color: #27272a;
+                    border-color: #52525b;
+                }
+                QLabel#profileAvatar {
+                    background-color: #27272a;
+                    color: #ffffff;
+                    border: 1px solid #3f3f46;
+                    border-radius: 35px;
                 }
             """)
             self.rename_btn.setStyleSheet("""
                 QPushButton {
-                    background-color: #22222a;
+                    background-color: #27272a;
                     border: none;
                     border-radius: 12px;
-                    color: #94a3b8;
+                    color: #ffffff;
                     font-size: 10px;
                     padding: 0px;
                 }
                 QPushButton:hover {
-                    background-color: #2d2d37;
-                    color: #6366f1;
+                    background-color: #3f3f46;
                 }
             """)
             self.toggle_bot_btn.setStyleSheet("""
                 QPushButton {
-                    background-color: #22222a;
+                    background-color: #27272a;
                     border: none;
                     border-radius: 12px;
-                    color: #94a3b8;
+                    color: #ffffff;
                     font-size: 10px;
                     padding: 0px;
                 }
                 QPushButton:hover {
-                    background-color: #2d2d37;
-                    color: #3daa6d;
+                    background-color: #3f3f46;
                 }
             """)
-            self.name_label.setStyleSheet("color: #f9f9fb; background: transparent;")
+            self.name_label.setStyleSheet("color: #ffffff; background: transparent; border: none;")
         else:
             self.setStyleSheet("""
                 QFrame#profileCard {
                     background-color: #ffffff;
                     border: 1px solid #e2e8f0;
-                    border-radius: 10px;
+                    border-radius: 12px;
                 }
                 QFrame#profileCard:hover {
                     background-color: #f8fafc;
-                    border: 1px solid #6366f1;
+                    border-color: #cbd5e1;
+                }
+                QLabel#profileAvatar {
+                    background-color: #f1f5f9;
+                    color: #0f172a;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 35px;
                 }
             """)
             self.rename_btn.setStyleSheet("""
@@ -144,13 +149,12 @@ class ProfileCard(QFrame):
                     background-color: #f1f5f9;
                     border: none;
                     border-radius: 12px;
-                    color: #64748b;
+                    color: #0f172a;
                     font-size: 10px;
                     padding: 0px;
                 }
                 QPushButton:hover {
                     background-color: #e2e8f0;
-                    color: #6366f1;
                 }
             """)
             self.toggle_bot_btn.setStyleSheet("""
@@ -158,16 +162,15 @@ class ProfileCard(QFrame):
                     background-color: #f1f5f9;
                     border: none;
                     border-radius: 12px;
-                    color: #64748b;
+                    color: #0f172a;
                     font-size: 10px;
                     padding: 0px;
                 }
                 QPushButton:hover {
                     background-color: #e2e8f0;
-                    color: #2d8f5c;
                 }
             """)
-            self.name_label.setStyleSheet("color: #0f172a; background: transparent;")
+            self.name_label.setStyleSheet("color: #0f172a; background: transparent; border: none;")
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -208,25 +211,25 @@ class AddProfileCard(QFrame):
         if is_dark:
             self.setStyleSheet("""
                 QFrame#addProfileCard {
-                    background-color: transparent;
-                    border: 2px dashed #22222a;
-                    border-radius: 10px;
+                    background-color: #1e1e24;
+                    border: 1px dashed #3f3f46;
+                    border-radius: 12px;
                 }
                 QFrame#addProfileCard:hover {
-                    background-color: #16161a;
-                    border: 2px dashed #6366f1;
+                    background-color: #27272a;
+                    border-color: #52525b;
                 }
             """)
         else:
             self.setStyleSheet("""
                 QFrame#addProfileCard {
-                    background-color: transparent;
-                    border: 2px dashed #e2e8f0;
-                    border-radius: 10px;
+                    background-color: #ffffff;
+                    border: 1px dashed #cbd5e1;
+                    border-radius: 12px;
                 }
                 QFrame#addProfileCard:hover {
-                    background-color: #f1f5f9;
-                    border: 2px dashed #6366f1;
+                    background-color: #f8fafc;
+                    border-color: #94a3b8;
                 }
             """)
 
@@ -239,11 +242,13 @@ class AddProfileCard(QFrame):
 class ChatItemWidget(QWidget):
     def __init__(self, chat_name, last_msg, msg_time, is_group=False, parent=None):
         super().__init__(parent)
+        self.setObjectName("chatItem")
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(10)
         
         self.avatar = QLabel()
+        self.avatar.setObjectName("chatAvatar")
         self.avatar.setFixedSize(40, 40)
         self.avatar.setAlignment(Qt.AlignCenter)
         self.avatar.setFont(QFont("Arial", 14, QFont.Bold))
@@ -251,33 +256,25 @@ class ChatItemWidget(QWidget):
         initial = chat_name[0].upper() if chat_name else "?"
         if is_group:
             self.avatar.setText("👥")
-            self.avatar.setStyleSheet("""
-                background-color: #4f46e5;
-                color: #ffffff;
-                border-radius: 20px;
-            """)
         else:
             self.avatar.setText(initial)
-            self.avatar.setStyleSheet("""
-                background-color: #4f46e5;
-                color: #ffffff;
-                border-radius: 20px;
-            """)
             
         layout.addWidget(self.avatar)
         
         text_widget = QWidget()
+        text_widget.setObjectName("chatItemTextWidget")
         text_layout = QVBoxLayout(text_widget)
         text_layout.setContentsMargins(0, 0, 0, 0)
         text_layout.setSpacing(3)
         
         header_widget = QWidget()
+        header_widget.setObjectName("chatItemHeaderWidget")
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(0, 0, 0, 0)
         
         self.name_label = QLabel(chat_name)
+        self.name_label.setObjectName("chatItemName")
         self.name_label.setFont(QFont("Arial", 11, QFont.Bold))
-        self.name_label.setStyleSheet("")
         
         time_str = ""
         if msg_time:
@@ -292,8 +289,8 @@ class ChatItemWidget(QWidget):
                 time_str = str(msg_time)
                 
         self.time_label = QLabel(time_str)
+        self.time_label.setObjectName("chatItemTime")
         self.time_label.setFont(QFont("Arial", 9))
-        self.time_label.setStyleSheet("color: #8494a7;")
         self.time_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         
         header_layout.addWidget(self.name_label, 1)
@@ -302,13 +299,33 @@ class ChatItemWidget(QWidget):
         
         preview_text = last_msg[:40] + "..." if last_msg and len(last_msg) > 40 else (last_msg or "")
         self.preview_label = QLabel(preview_text)
+        self.preview_label.setObjectName("chatItemPreview")
         self.preview_label.setFont(QFont("Arial", 9))
-        self.preview_label.setStyleSheet("color: #8494a7;")
         text_layout.addWidget(self.preview_label)
         
         layout.addWidget(text_widget, 1)
         
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+    def setSelected(self, selected):
+        sel_val = "true" if selected else "false"
+        self.setProperty("selected", sel_val)
+        self.avatar.setProperty("selected", sel_val)
+        self.name_label.setProperty("selected", sel_val)
+        self.time_label.setProperty("selected", sel_val)
+        self.preview_label.setProperty("selected", sel_val)
+        
+        # Polish/unpolish to refresh stylesheet
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.avatar.style().unpolish(self.avatar)
+        self.avatar.style().polish(self.avatar)
+        self.name_label.style().unpolish(self.name_label)
+        self.name_label.style().polish(self.name_label)
+        self.time_label.style().unpolish(self.time_label)
+        self.time_label.style().polish(self.time_label)
+        self.preview_label.style().unpolish(self.preview_label)
+        self.preview_label.style().polish(self.preview_label)
 
 
 class MessageRowWidget(QWidget):

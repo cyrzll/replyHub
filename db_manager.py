@@ -306,25 +306,20 @@ def init_theme_db():
             value TEXT NOT NULL
         )
     """)
-    # Set default theme to 'dark' if it doesn't exist
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'dark')")
+    # Set default theme to 'light' if it doesn't exist
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'light')")
     conn.commit()
     conn.close()
 
 def get_theme() -> str:
     """Retrieves the current saved theme from the database."""
-    conn = sqlite3.connect(str(THEME_DB))
-    cursor = conn.cursor()
-    cursor.execute("SELECT value FROM settings WHERE key = 'theme'")
-    row = cursor.fetchone()
-    conn.close()
-    return row[0] if row else "dark"
+    return "light"
 
 def set_theme(theme_name: str):
     """Saves the theme selection to the database."""
     conn = sqlite3.connect(str(THEME_DB))
     cursor = conn.cursor()
-    cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('theme', ?)", (theme_name,))
+    cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('theme', 'light')", ())
     conn.commit()
     conn.close()
 

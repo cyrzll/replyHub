@@ -15,7 +15,7 @@
 1. **Netflix-Style Launcher (Multi-Profile)**
    - Dashboard premium yang memungkinkan pengelolaan beberapa profil WhatsApp/nomor sekaligus.
    - Fitur *Activate All* dan *Deactivate All* untuk mengontrol status koneksi bot secara masal.
-   - Peralihan tema terintegrasi (Dark & Light Mode) dengan desain modern berbasis CSS kustom.
+   - Dashboard premium dengan desain modern yang bersih dan ergonomis (rounded corners, soft thin borders).
 
 2. **Koneksi WhatsApp Instan (QR Code Dinamis)**
    - Tampilan dialog *QR Code* real-time berbasis engine `neonize` (Go whatsmeow) untuk menghubungkan akun melalui pemindaian perangkat bertautan.
@@ -38,6 +38,32 @@
    - Halaman obrolan interaktif yang menampilkan daftar percakapan aktif di setiap akun.
    - Riwayat chat terperinci dengan tampilan gelembung percakapan (*chat bubble*) bergaya modern lengkap dengan status waktu.
    - Dukungan CRUD pesan lokal: Anda dapat mengedit teks pesan atau menghapus pesan langsung di database lokal aplikasi.
+
+---
+
+## 🎨 Desain Sistem: Modern Premium UI
+
+Aplikasi ini menggunakan gaya desain **Modern Premium UI / SaaS Dashboard**, dengan ciri utama berupa sudut melengkung halus, garis batas tipis yang bersih, dan palet warna kontras tinggi yang nyaman di mata untuk menonjolkan profesionalitas serta keterbacaan tinggi.
+
+* **Rounded Corners (Sudut Melengkung):** Penggunaan sudut luar membulat `8px` s/d `12px` pada kartu profil, panel halaman, tombol, dan input fields untuk memberikan nuansa antarmuka yang bersih dan bersahabat.
+* **Soft Borders (Garis Batas Halus):** Menggunakan garis batas solid tipis (`1px`) dengan warna abu-abu netral (`#e2e8f0` / `#cbd5e1`) untuk menstrukturkan tata letak antarmuka.
+* **Semantic Accents (Aksen Semantik):** Menggunakan warna penanda status koneksi yang dinamis (Hijau, Kuning, Merah) serta aksen biru indigo (`#2563eb`) untuk elemen aktif guna menyajikan hirarki informasi yang jelas.
+
+Untuk info lebih detail tentang arsitektur desain, silakan baca dokumentasi lengkap di [DESIGN.md](file:///Users/rizal/projek/python/pbo/ReplyHub/DESIGN.md).
+
+### Palet Warna (Color Palette)
+
+| Kategori | Nilai Hex | Deskripsi |
+| :--- | :--- | :--- |
+| **Primary Background** | `#ffffff` | Latar belakang halaman utama dan panel aktif (Putih) |
+| **Secondary Background** | `#f8fafc` | Latar belakang sidebar kiri, header obrolan, dan input area |
+| **Primary Text** | `#0f172a` | Warna teks utama, judul, dan tombol aktif (Slate Dark) |
+| **Secondary Text/Muted** | `#64748b` | Keterangan tambahan, preview pesan terakhir, dan timestamp (Slate Gray) |
+| **Destructive/Danger** | `#ef4444` | Warna penanda peringatan, status terputus, dan aksi kritis (Merah) |
+
+### Tipografi (Typography)
+* **Font Utama:** `Poppins` (Sans-serif) digunakan untuk seluruh body text, pesan obrolan, dan kontrol input.
+* **Font Sekunder:** `Monospace` (`Courier New` / Courier) digunakan untuk info teknis, timestamp, ID/JID WhatsApp, dan log aktivitas real-time.
 
 ---
 

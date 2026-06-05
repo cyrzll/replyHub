@@ -62,6 +62,11 @@ class BotThread(QThread):
             import time
 
             chat_jid = Jid2String(event.Info.MessageSource.Chat)
+            
+            # Ignore WhatsApp Status / Stories updates and Channels/Newsletters
+            if "broadcast" in chat_jid or "newsletter" in chat_jid:
+                return
+
             sender_num = event.Info.MessageSource.Sender.User
             sender_jid = f"{sender_num}@s.whatsapp.net" if sender_num else ""
             sender_name = getattr(event.Info, "Pushname", None) or getattr(event.Info, "PushName", None) or "WhatsApp User"
@@ -558,6 +563,11 @@ class BotThread(QThread):
             try:
                 for convo in event.conversations:
                     chat_jid = convo.ID
+                    
+                    # Ignore WhatsApp Status / Stories updates and Channels/Newsletters
+                    if "broadcast" in chat_jid or "newsletter" in chat_jid:
+                        continue
+
                     chat_name = convo.newJID or convo.oldJID or None
                     
                     for history_msg in convo.messages:

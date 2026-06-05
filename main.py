@@ -186,14 +186,7 @@ class MainWindow(QMainWindow):
         scroll.setWidget(scroll_content)
         center_layout.addWidget(scroll)
         
-        # Bottom Theme Toggle Button in Launcher
-        self.launcher_theme_btn = QPushButton("☀️ Light Mode")
-        self.launcher_theme_btn.setObjectName("secondaryBtn")
-        self.launcher_theme_btn.setFixedSize(140, 40)
-        self.launcher_theme_btn.clicked.connect(self.toggle_theme)
-        self.launcher_theme_btn.setToolTip("Switch color scheme between Light and Dark mode")
         center_layout.addSpacing(30)
-        center_layout.addWidget(self.launcher_theme_btn, 0, Qt.AlignCenter)
         
         launcher_layout.addStretch()
         launcher_layout.addWidget(center_widget)
@@ -353,12 +346,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(self.profile_btn)
         sidebar_layout.addSpacing(5)
 
-        # Theme toggle button in sidebar footer
-        self.theme_btn = QPushButton("☀️ Light Mode")
-        self.theme_btn.setObjectName("secondaryBtn")
-        self.theme_btn.clicked.connect(self.toggle_theme)
-        self.theme_btn.setToolTip("Switch color scheme between Light and Dark mode")
-        sidebar_layout.addWidget(self.theme_btn)
+        sidebar_layout.addSpacing(5)
 
         layout.addWidget(self.sidebar)
 
@@ -413,19 +401,19 @@ class MainWindow(QMainWindow):
         
         if is_dark:
             dialog.setStyleSheet("""
-                QInputDialog { background-color: #0f0f13; }
-                QLabel { color: #f9f9fb; font-size: 13px; }
-                QLineEdit { background-color: #16161a; border: 1px solid #22222a; border-radius: 6px; padding: 6px; color: #f9f9fb; }
-                QPushButton { background-color: #4f46e5; color: #ffffff; border: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; }
-                QPushButton:hover { background-color: #4338ca; }
+                QInputDialog { background-color: #1e1e24; border: 1px solid #3f3f46; border-radius: 12px; }
+                QLabel { color: #ffffff; font-size: 13px; font-family: 'Poppins'; }
+                QLineEdit { background-color: #27272a; border: 1px solid #3f3f46; border-radius: 8px; padding: 6px; color: #ffffff; }
+                QPushButton { background-color: #ffffff; color: #000000; border: none; border-radius: 8px; padding: 6px 12px; font-weight: bold; }
+                QPushButton:hover { background-color: #e2e8f0; }
             """)
         else:
             dialog.setStyleSheet("""
-                QInputDialog { background-color: #f8fafc; }
-                QLabel { color: #0f172a; font-size: 13px; }
-                QLineEdit { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; color: #0f172a; }
-                QPushButton { background-color: #4f46e5; color: #ffffff; border: none; border-radius: 6px; padding: 6px 12px; font-weight: bold; }
-                QPushButton:hover { background-color: #4338ca; }
+                QInputDialog { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; }
+                QLabel { color: #0f172a; font-size: 13px; font-family: 'Poppins'; }
+                QLineEdit { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px; color: #0f172a; }
+                QPushButton { background-color: #0f172a; color: #ffffff; border: none; border-radius: 8px; padding: 6px 12px; font-weight: bold; }
+                QPushButton:hover { background-color: #1e293b; }
             """)
             
         if dialog.exec() == QInputDialog.Accepted:
@@ -744,7 +732,7 @@ class MainWindow(QMainWindow):
         # Placeholder: shown when no account is selected
         self.control_placeholder = QLabel("Select or add a WhatsApp account from the Accounts page first.")
         self.control_placeholder.setAlignment(Qt.AlignCenter)
-        self.control_placeholder.setStyleSheet("color: #8494a7; font-size: 15px; font-weight: bold;")
+        self.control_placeholder.setStyleSheet("font-size: 15px; font-weight: bold; font-family: 'Poppins';")
         layout.addWidget(self.control_placeholder)
 
         # Main active widget
@@ -847,7 +835,7 @@ class MainWindow(QMainWindow):
         # Placeholder: shown when no account is selected
         self.chat_placeholder = QLabel("Select or add a WhatsApp account from the Accounts page first.")
         self.chat_placeholder.setAlignment(Qt.AlignCenter)
-        self.chat_placeholder.setStyleSheet("color: #8494a7; font-size: 15px; font-weight: bold;")
+        self.chat_placeholder.setStyleSheet("font-size: 15px; font-weight: bold; font-family: 'Poppins';")
         layout.addWidget(self.chat_placeholder)
 
         # Main active widget
@@ -884,7 +872,7 @@ class MainWindow(QMainWindow):
         self.chat_list_widget = QListWidget()
         self.chat_list_widget.setObjectName("chatList")
         self.chat_list_widget.setSpacing(2)
-        self.chat_list_widget.itemClicked.connect(self.on_chat_selected)
+        self.chat_list_widget.currentItemChanged.connect(self.on_current_chat_changed)
         left_layout.addWidget(self.chat_list_widget)
 
         chat_layout.addWidget(left_widget)
@@ -1077,9 +1065,11 @@ class MainWindow(QMainWindow):
             
         prev_selected_jid = self.selected_chat_jid
         
+        self.chat_list_widget.blockSignals(True)
         self.chat_list_widget.clear()
         chats = db_manager.get_chats_for_account(self.selected_account_id)
         
+        selected_item = None
         for chat_row in chats:
             # id, chat_jid, chat_name, unread_count, last_message, last_message_time
             _, chat_jid, chat_name, _, last_message, last_message_time = chat_row
@@ -1100,7 +1090,26 @@ class MainWindow(QMainWindow):
             self.chat_list_widget.setItemWidget(item, widget)
             
             if prev_selected_jid and prev_selected_jid == chat_jid:
-                self.chat_list_widget.setCurrentItem(item)
+                selected_item = item
+                
+        if selected_item:
+            self.chat_list_widget.setCurrentItem(selected_item)
+            
+        self.chat_list_widget.blockSignals(False)
+        
+        if selected_item:
+            self.on_chat_selected(selected_item)
+
+    def on_current_chat_changed(self, current, previous):
+        # Update selection state on all items
+        for i in range(self.chat_list_widget.count()):
+            item = self.chat_list_widget.item(i)
+            widget = self.chat_list_widget.itemWidget(item)
+            if widget and hasattr(widget, "setSelected"):
+                widget.setSelected(item == current)
+                
+        if current:
+            self.on_chat_selected(current)
 
     def on_chat_selected(self, item):
         if not item:
@@ -1110,6 +1119,13 @@ class MainWindow(QMainWindow):
         
         self.selected_chat_jid = chat_jid
         
+        # Make sure styling is updated for selected item
+        for i in range(self.chat_list_widget.count()):
+            curr_item = self.chat_list_widget.item(i)
+            widget = self.chat_list_widget.itemWidget(curr_item)
+            if widget and hasattr(widget, "setSelected"):
+                widget.setSelected(curr_item == item)
+                
         self.chat_placeholder_right.setVisible(False)
         self.chat_convo_widget.setVisible(True)
         
@@ -1143,22 +1159,24 @@ class MainWindow(QMainWindow):
             
             is_dark = db_manager.get_theme() == "dark"
             if is_from_me:
-                bubble_frame.setStyleSheet("""
-                    background-color: #4f46e5;
-                    border-radius: 10px;
-                    border-bottom-right-radius: 3px;
-                    color: #ffffff;
-                    border: none;
-                """)
-            else:
-                bg_color = "#22222a" if is_dark else "#f1f5f9"
-                text_color = "#f9f9fb" if is_dark else "#0f172a"
+                bg_color = "#2563eb" if is_dark else "#0f172a"
+                text_color = "#ffffff"
                 bubble_frame.setStyleSheet(f"""
                     background-color: {bg_color};
-                    border-radius: 10px;
-                    border-bottom-left-radius: 3px;
                     color: {text_color};
                     border: none;
+                    border-radius: 12px;
+                    border-bottom-right-radius: 2px;
+                """)
+            else:
+                bg_color = "#27272a" if is_dark else "#f1f5f9"
+                text_color = "#ffffff" if is_dark else "#0f172a"
+                bubble_frame.setStyleSheet(f"""
+                    background-color: {bg_color};
+                    color: {text_color};
+                    border: none;
+                    border-radius: 12px;
+                    border-bottom-left-radius: 2px;
                 """)
             
             if not is_from_me and sender_name and sender_name != "WhatsApp User":
@@ -1174,7 +1192,8 @@ class MainWindow(QMainWindow):
                 if not pixmap.isNull():
                     scaled_pixmap = pixmap.scaledToWidth(250, Qt.SmoothTransformation)
                     img_label.setPixmap(scaled_pixmap)
-                    img_label.setStyleSheet("border-radius: 4px; background: transparent; border: none;")
+                    border_color = "#3f3f46" if is_dark else "#e2e8f0"
+                    img_label.setStyleSheet(f"border-radius: 8px; background: transparent; border: 1px solid {border_color};")
                     bubble_layout.addWidget(img_label)
                     
             if message_text and message_text != "[Photo]":
@@ -1182,7 +1201,7 @@ class MainWindow(QMainWindow):
                 text_label.setWordWrap(True)
                 text_label.setFont(QFont("Arial", 11))
                 text_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-                msg_color = "#ffffff" if is_from_me else ("#f9f9fb" if is_dark else "#0f172a")
+                msg_color = "#ffffff" if is_from_me else ("#ffffff" if is_dark else "#0f172a")
                 text_label.setStyleSheet(f"background: transparent; color: {msg_color}; border: none;")
                 bubble_layout.addWidget(text_label)
                 
@@ -1196,8 +1215,9 @@ class MainWindow(QMainWindow):
                     
             time_label = QLabel(time_str)
             time_label.setAlignment(Qt.AlignRight)
-            time_color = "#cbd5e1" if is_from_me else ("#94a3b8" if is_dark else "#64748b")
-            time_label.setStyleSheet(f"background: transparent; color: {time_color}; font-size: 9px; border: none;")
+            time_label.setFont(QFont("Courier New", 9))
+            time_color = "#000000" if (is_from_me and is_dark) else ("#ffffff" if (is_from_me or is_dark) else "#000000")
+            time_label.setStyleSheet(f"background: transparent; color: {time_color}; border: none;")
             bubble_layout.addWidget(time_label)
             
             msg_data = {
@@ -1433,7 +1453,7 @@ class MainWindow(QMainWindow):
         # Placeholder: shown when no account is selected
         self.rules_placeholder = QLabel("Select or add a WhatsApp account from the Accounts page first.")
         self.rules_placeholder.setAlignment(Qt.AlignCenter)
-        self.rules_placeholder.setStyleSheet("color: #8494a7; font-size: 15px; font-weight: bold;")
+        self.rules_placeholder.setStyleSheet("font-size: 15px; font-weight: bold; font-family: 'Poppins';")
         layout.addWidget(self.rules_placeholder)
 
         # Main active widget
@@ -1548,7 +1568,7 @@ class MainWindow(QMainWindow):
         # Placeholder: shown when no account is selected
         self.gemini_placeholder = QLabel("Select or add a WhatsApp account from the Accounts page first.")
         self.gemini_placeholder.setAlignment(Qt.AlignCenter)
-        self.gemini_placeholder.setStyleSheet("color: #8494a7; font-size: 15px; font-weight: bold;")
+        self.gemini_placeholder.setStyleSheet("font-size: 15px; font-weight: bold; font-family: 'Poppins';")
         layout.addWidget(self.gemini_placeholder)
 
         # Main active widget
@@ -1626,7 +1646,7 @@ class MainWindow(QMainWindow):
         # Placeholder: shown when no account is selected
         self.products_placeholder = QLabel("Select or add a WhatsApp account from the Accounts page first.")
         self.products_placeholder.setAlignment(Qt.AlignCenter)
-        self.products_placeholder.setStyleSheet("color: #8494a7; font-size: 15px; font-weight: bold;")
+        self.products_placeholder.setStyleSheet("font-size: 15px; font-weight: bold; font-family: 'Poppins';")
         layout.addWidget(self.products_placeholder)
 
         # Main active widget
@@ -1812,41 +1832,43 @@ class MainWindow(QMainWindow):
             actions_layout.setContentsMargins(4, 2, 4, 2)
             actions_layout.setSpacing(6)
 
-            is_dark = db_manager.get_theme() == "dark"
-            btn_bg = "#242c3d" if is_dark else "#f0f3f8"
-            btn_fg = "#e8ecf1" if is_dark else "#1a1f2e"
-            border_color = "#2d3548" if is_dark else "#dce3ed"
-
             edit_btn = QPushButton("Edit")
             edit_btn.setToolTip("Edit this product details")
-            edit_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {btn_bg}; 
-                    color: {btn_fg};
-                    border: 1px solid {border_color};
+            edit_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #ffffff; 
+                    color: #0f172a;
+                    border: 1px solid #cbd5e1;
                     padding: 4px 10px; 
                     border-radius: 6px; 
-                    font-weight: normal; 
+                    font-weight: bold; 
                     font-size: 11px;
-                }}
+                }
+                QPushButton:hover {
+                    background-color: #f8fafc;
+                    border-color: #94a3b8;
+                }
             """)
             edit_btn.clicked.connect(
                 lambda _, p_id=prod_id, n=name, p=price, s=stock, d=description, img=image_path, disc=discount, cat=category, gen=gender: 
                 self.on_edit_product_clicked(p_id, n, p, s, d, img, disc, cat, gen)
             )
-
+ 
             del_btn = QPushButton("Delete")
             del_btn.setToolTip("Delete this product permanently")
-            del_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: transparent; 
-                    border: 1px solid #8494a7;
-                    color: #8494a7;
+            del_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #ef4444; 
+                    border: none;
+                    color: #ffffff;
                     padding: 4px 10px; 
                     border-radius: 6px; 
-                    font-weight: normal; 
+                    font-weight: bold; 
                     font-size: 11px;
-                }}
+                }
+                QPushButton:hover {
+                    background-color: #dc2626;
+                }
             """)
             del_btn.clicked.connect(lambda _, p_id=prod_id: self.on_delete_product_clicked(p_id))
 
@@ -1997,38 +2019,40 @@ class MainWindow(QMainWindow):
             actions_layout.setContentsMargins(4, 2, 4, 2)
             actions_layout.setSpacing(6)
 
-            is_dark = db_manager.get_theme() == "dark"
-            btn_bg = "#242c3d" if is_dark else "#f0f3f8"
-            btn_fg = "#e8ecf1" if is_dark else "#1a1f2e"
-            border_color = "#2d3548" if is_dark else "#dce3ed"
-
             edit_btn = QPushButton("Edit")
             edit_btn.setToolTip("Edit this auto-reply rule")
-            edit_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {btn_bg}; 
-                    color: {btn_fg};
-                    border: 1px solid {border_color};
+            edit_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #ffffff; 
+                    color: #000000;
+                    border: 2px solid #000000;
                     padding: 4px 10px; 
-                    border-radius: 6px; 
-                    font-weight: normal; 
+                    border-radius: 0px; 
+                    font-weight: bold; 
                     font-size: 11px;
-                }}
+                }
+                QPushButton:hover {
+                    background-color: #f5f5f5;
+                }
             """)
             edit_btn.clicked.connect(lambda _, r_id=rule_id, kw=keyword, rep=reply, img=image_path: self.load_rule_for_edit(r_id, kw, rep, img))
 
             del_btn = QPushButton("Delete")
             del_btn.setToolTip("Delete this auto-reply rule permanently")
-            del_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: transparent; 
-                    border: 1px solid #8494a7;
-                    color: #8494a7;
+            del_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #e12b30; 
+                    border: 2px solid #000000;
+                    color: #ffffff;
                     padding: 4px 10px; 
-                    border-radius: 6px; 
-                    font-weight: normal; 
+                    border-radius: 0px; 
+                    font-weight: bold; 
                     font-size: 11px;
-                }}
+                }
+                QPushButton:hover {
+                    background-color: #ffffff;
+                    color: #e12b30;
+                }
             """)
             del_btn.clicked.connect(lambda _, r_id=rule_id: self.delete_rule(r_id))
 
@@ -2112,22 +2136,11 @@ class MainWindow(QMainWindow):
     # ==========================================
     def apply_theme(self, theme_name):
         """Applies stylesheet and colors according to selected theme."""
-        if theme_name == "dark":
-            self.setStyleSheet(DARK_STYLESHEET)
-            self.theme_btn.setText("☀️ Light Mode")
-            self.launcher_theme_btn.setText("☀️ Light Mode")
-            self.logo_label.setStyleSheet("color: #e8ecf1; padding-bottom: 12px; border-bottom: 1px solid #2d3548;")
-            self.launcher_title.setStyleSheet("color: #e8ecf1;")
-            self.profile_name_label.setStyleSheet("color: #e8ecf1; background: transparent; border: none;")
-            self.profile_phone_label.setStyleSheet("color: #8494a7; background: transparent; border: none;")
-        else:
-            self.setStyleSheet(LIGHT_STYLESHEET)
-            self.theme_btn.setText("🌙 Dark Mode")
-            self.launcher_theme_btn.setText("🌙 Dark Mode")
-            self.logo_label.setStyleSheet("color: #1a1f2e; padding-bottom: 12px; border-bottom: 1px solid #dce3ed;")
-            self.launcher_title.setStyleSheet("color: #1a1f2e;")
-            self.profile_name_label.setStyleSheet("color: #1a1f2e; background: transparent; border: none;")
-            self.profile_phone_label.setStyleSheet("color: #6b7a8d; background: transparent; border: none;")
+        self.setStyleSheet(LIGHT_STYLESHEET)
+        self.logo_label.setStyleSheet("color: #000000; padding-bottom: 12px; border-bottom: 2px solid #000000; font-family: 'Poppins'; font-weight: 700; text-transform: uppercase;")
+        self.launcher_title.setStyleSheet("color: #000000; font-family: 'Poppins'; font-weight: 700; text-transform: uppercase;")
+        self.profile_name_label.setStyleSheet("color: #000000; background: transparent; border: none; font-weight: 700;")
+        self.profile_phone_label.setStyleSheet("color: #000000; background: transparent; border: none; font-family: 'Courier New';")
             
         self.update_status_pill()
         self.update_active_profile_widget()
@@ -2137,16 +2150,13 @@ class MainWindow(QMainWindow):
             item = self.profiles_layout.itemAt(i)
             if item and item.widget():
                 if hasattr(item.widget(), "apply_card_theme"):
-                    item.widget().apply_card_theme(theme_name == "dark")
+                    item.widget().apply_card_theme(False)
                     
         self.load_rules_into_table()
 
     def toggle_theme(self):
-        """Toggles the current theme and saves the preference."""
-        current = db_manager.get_theme()
-        new_theme = "light" if current == "dark" else "dark"
-        db_manager.set_theme(new_theme)
-        self.apply_theme(new_theme)
+        """Toggles the current theme (No-op since dark mode is removed)."""
+        pass
 
     def stop_bot_for_account(self, account_id):
         """Stops the bot background thread for the specified account."""
@@ -2157,86 +2167,68 @@ class MainWindow(QMainWindow):
 
     def update_status_pill(self):
         """Applies monochromatic formatting to the status indicator pill."""
+        is_dark = db_manager.get_theme() == "dark"
         if self.selected_account_id is None:
             self.status_pill.setText("NO ACTIVE SELECTION")
-            self.status_pill.setStyleSheet("""
-                background-color: #242c3d;
-                color: #8494a7;
-                padding: 5px 12px;
-                border-radius: 6px;
+            bg_color = "#27272a" if is_dark else "#f1f5f9"
+            text_color = "#a1a1aa" if is_dark else "#64748b"
+            self.status_pill.setStyleSheet(f"""
+                background-color: {bg_color};
+                color: {text_color};
+                padding: 4px 12px;
+                border: none;
+                border-radius: 10px;
                 font-weight: bold;
                 font-size: 11px;
+                font-family: 'Poppins';
             """)
             return
             
         thread = self.bot_threads.get(self.selected_account_id)
-        is_dark = db_manager.get_theme() == "dark"
         
         if thread and thread.isRunning():
             if thread.client and thread.client.connected:
                 self.status_pill.setText("CONNECTED")
-                if is_dark:
-                    self.status_pill.setStyleSheet("""
-                        background-color: #4f46e5; 
-                        color: #ffffff; 
-                        padding: 5px 12px; 
-                        border-radius: 6px; 
-                        font-weight: bold;
-                        font-size: 11px;
-                    """)
-                else:
-                    self.status_pill.setStyleSheet("""
-                        background-color: #4f46e5; 
-                        color: #ffffff; 
-                        padding: 5px 12px; 
-                        border-radius: 6px; 
-                        font-weight: bold;
-                        font-size: 11px;
-                    """)
+                bg_color = "#064e3b" if is_dark else "#dcfce7"
+                text_color = "#34d399" if is_dark else "#166534"
+                self.status_pill.setStyleSheet(f"""
+                    background-color: {bg_color}; 
+                    color: {text_color}; 
+                    padding: 4px 12px; 
+                    border: none;
+                    border-radius: 10px; 
+                    font-weight: bold;
+                    font-size: 11px;
+                    font-family: 'Poppins';
+                """)
             else:
                 self.status_pill.setText("CONNECTING...")
-                if is_dark:
-                    self.status_pill.setStyleSheet("""
-                        background-color: #16161a; 
-                        color: #94a3b8; 
-                        padding: 5px 12px; 
-                        border-radius: 6px; 
-                        font-weight: bold;
-                        font-size: 11px;
-                        border: 1px solid #22222a;
-                    """)
-                else:
-                    self.status_pill.setStyleSheet("""
-                        background-color: #f1f5f9; 
-                        color: #64748b; 
-                        padding: 5px 12px; 
-                        border-radius: 6px; 
-                        font-weight: bold;
-                        font-size: 11px;
-                        border: 1px solid #e2e8f0;
-                    """)
+                bg_color = "#78350f" if is_dark else "#fef9c3"
+                text_color = "#fbbf24" if is_dark else "#854d0e"
+                self.status_pill.setStyleSheet(f"""
+                    background-color: {bg_color}; 
+                    color: {text_color}; 
+                    padding: 4px 12px; 
+                    border: none;
+                    border-radius: 10px; 
+                    font-weight: bold;
+                    font-size: 11px;
+                    font-family: 'Poppins';
+                """)
         else:
             self.status_pill.setText("DISCONNECTED")
-            if is_dark:
-                self.status_pill.setStyleSheet("""
-                    background-color: #0f0f13; 
-                    color: #94a3b8; 
-                    padding: 5px 12px; 
-                    border-radius: 6px; 
-                    font-weight: bold;
-                    font-size: 11px;
-                    border: 1px solid #22222a;
-                """)
-            else:
-                self.status_pill.setStyleSheet("""
-                    background-color: #f8fafc; 
-                    color: #64748b; 
-                    padding: 5px 12px; 
-                    border-radius: 6px; 
-                    font-weight: bold;
-                    font-size: 11px;
-                    border: 1px solid #e2e8f0;
-                """)
+            bg_color = "#7f1d1d" if is_dark else "#fee2e2"
+            text_color = "#f87171" if is_dark else "#991b1b"
+            self.status_pill.setStyleSheet(f"""
+                background-color: {bg_color}; 
+                color: {text_color}; 
+                padding: 4px 12px; 
+                border: none;
+                border-radius: 10px; 
+                font-weight: bold;
+                font-size: 11px;
+                font-family: 'Poppins';
+            """)
 
 
     # Cleanup running threads

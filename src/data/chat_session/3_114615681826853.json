@@ -1,0 +1,18 @@
+[
+    {
+        "role": "user",
+        "content": "[Photo]"
+    },
+    {
+        "role": "assistant",
+        "content": "Maaf kak, saya hanya bisa membantu pertanyaan seputar produk dan pemesanan."
+    },
+    {
+        "role": "user",
+        "content": "[Photo]"
+    },
+    {
+        "role": "assistant",
+        "content": "Maaf kak, saya hanya bisa membantu pertanyaan seputar produk dan pemesanan."
+    }
+]
