@@ -1,14 +1,6 @@
 [
     {
         "role": "user",
-        "content": "hai min"
-    },
-    {
-        "role": "assistant",
-        "content": "Maaf kak, saya hanya bisa membantu pertanyaan seputar produk dan pemesanan."
-    },
-    {
-        "role": "user",
         "content": "bisa lihat produknya min?"
     },
     {
@@ -38,5 +30,13 @@
     {
         "role": "assistant",
         "content": "Oke kak, ini detail produknya ya:\n\n**Nama:** Kaos Oversize\n**Kategori:** Atasan\n**Gender:** Unisex\n**Harga:** Rp99.000\n**Diskon:** 20%\n**Harga Setelah Diskon:** Rp79.200\n**Stok:** Hitam M, L; Putih L\n**Deskripsi:** cotton combed 24s\n\n{{SEND_IMAGE: 1}}"
+    },
+    {
+        "role": "user",
+        "content": "min lihat produk atasan"
+    },
+    {
+        "role": "assistant",
+        "content": "Oke kak, ini produk untuk kategori atasan:\n\nuntuk atasan\n1. Kaos Oversize (Harga: Rp99.000, Diskon: 20%, Harga Setelah Diskon: Rp79.200)\n\nAda lagi yang bisa dibantu kak? \ud83d\ude0a"
     }
 ]
