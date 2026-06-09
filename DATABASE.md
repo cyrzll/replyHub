@@ -114,12 +114,36 @@ Menyimpan aturan auto-reply berbasis kata kunci statis yang dibuat oleh user di 
 
 ```mermaid
 erDiagram
-    accounts ||--o{ products : "memiliki"
-    accounts ||--o{ chats : "mengelola"
-    accounts ||--o{ messages : "mencatat"
-    accounts ||--o{ auto_replies : "memiliki aturan"
-    chats ||--o{ messages : "berisi"
+    accounts ||--o{ products : "memiliki (One-to-Many)"
+    accounts ||--o{ chats : "mengelola (One-to-Many)"
+    accounts ||--o{ messages : "mencatat (One-to-Many)"
+    accounts ||--o{ auto_replies : "memiliki aturan (One-to-Many, Logical)"
+    chats ||--o{ messages : "berisi (One-to-Many)"
 ```
+
+### Detail Penjelasan Relasi & Kardinalitas
+
+Hubungan antar-tabel dalam ReplyHub dibagi menjadi hubungan fisik (di database yang sama) dan hubungan logis (antar database yang berbeda):
+
+#### 1. Relasi Fisik (di dalam `userdata.db`)
+* **`accounts (id)` ─── `1 : N` ─── `products (account_id)`**
+  * **Kardinalitas:** Satu akun WhatsApp (`accounts`) dapat memiliki banyak produk (`products`) di katalognya.
+  * **Kunci Hubung:** `products.account_id` merujuk secara fisik ke `accounts.id`.
+* **`accounts (id)` ─── `1 : N` ─── `chats (account_id)`**
+  * **Kardinalitas:** Satu akun WhatsApp (`accounts`) dapat mengelola banyak percakapan/chat room (`chats`).
+  * **Kunci Hubung:** `chats.account_id` merujuk secara fisik ke `accounts.id`.
+* **`accounts (id)` ─── `1 : N` ─── `messages (account_id)`**
+  * **Kardinalitas:** Satu akun WhatsApp (`accounts`) mencatat banyak riwayat pesan masuk dan keluar (`messages`).
+  * **Kunci Hubung:** `messages.account_id` merujuk secara fisik ke `accounts.id`.
+* **`chats (chat_jid)` ─── `1 : N` ─── `messages (chat_jid)`**
+  * **Kardinalitas:** Satu percakapan WhatsApp (`chats`) berisi banyak riwayat pesan (`messages`).
+  * **Kunci Hubung:** `messages.chat_jid` merujuk secara fisik ke `chats.chat_jid`.
+
+#### 2. Relasi Logis (Lintas Database: `userdata.db` ── `chat_data.db`)
+Karena SQLite tidak mendukung *Foreign Key* lintas file database yang berbeda secara default tanpa attaching database, relasi ini dikelola secara logis di level aplikasi:
+* **`accounts (id)` [in `userdata.db`] ─── `1 : N` ─── `auto_replies (account_id)` [in `chat_data.db`]**
+  * **Kardinalitas:** Satu akun WhatsApp memiliki banyak aturan balasan otomatis berbasis kata kunci.
+  * **Kunci Hubung:** `auto_replies.account_id` menyimpan ID yang sesuai dengan `accounts.id` dan dikontrol lewat kueri `db_manager.py`.
 
 ---
 
