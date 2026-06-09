@@ -1,0 +1,42 @@
+[
+    {
+        "role": "user",
+        "content": "Mau lihat katalog produk"
+    },
+    {
+        "role": "assistant",
+        "content": "Siap kak, ini katalog produknya ya:\n\nuntuk atasan\n1. Kaos Oversize (Harga: Rp99.000, Diskon 20% jadi Rp79.200)\n\nuntuk bawahan\n1. celana dalam (Harga: Rp199.000, Diskon 10% jadi Rp179.100)"
+    },
+    {
+        "role": "user",
+        "content": "Lihat gambar produk kaos"
+    },
+    {
+        "role": "assistant",
+        "content": "Oke kak, ini detail Kaos Oversize ya:\n\nNama: Kaos Oversize\nKategori: Atasan\nGender: Unisex\nHarga: Rp99.000\nDiskon: 20%\nHarga Setelah Diskon: Rp79.200\nStok: Hitam M, L; Putih L\nDeskripsi: cotton combed 24s\n{{SEND_IMAGE: 1}}"
+    },
+    {
+        "role": "user",
+        "content": "Asu"
+    },
+    {
+        "role": "assistant",
+        "content": "Maaf kak, saya hanya bisa membantu pertanyaan seputar produk dan pemesanan."
+    },
+    {
+        "role": "user",
+        "content": "Ada asu?"
+    },
+    {
+        "role": "assistant",
+        "content": "Maaf kak, saya hanya bisa membantu pertanyaan seputar produk dan pemesanan."
+    },
+    {
+        "role": "user",
+        "content": "Piye to su"
+    },
+    {
+        "role": "assistant",
+        "content": "Maaf kak, saya hanya bisa membantu pertanyaan seputar produk dan pemesanan."
+    }
+]

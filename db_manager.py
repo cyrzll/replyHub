@@ -294,6 +294,37 @@ def get_reply_for_message(account_id, message_text):
     conn.close()
     return (row[0], row[1]) if row else (None, None)
 
+def get_cached_reply_for_message(account_id, message_text):
+    """Checks if the same message_text was previously answered by the bot (account_id) and returns (reply, image_path)."""
+    if not message_text:
+        return None, None
+    
+    clean_text = message_text.strip().lower()
+    try:
+        conn = sqlite3.connect(str(USER_DB_FILE))
+        cursor = conn.cursor()
+        # Query messages: find a user message (is_from_me = 0) with matching text,
+        # then join it with the subsequent bot reply (is_from_me = 1) in the same chat.
+        cursor.execute("""
+            SELECT r.message_text, r.media_path
+            FROM messages u
+            JOIN messages r ON u.account_id = r.account_id 
+              AND u.chat_jid = r.chat_jid 
+              AND r.id > u.id 
+              AND r.is_from_me = 1
+            WHERE u.account_id = ? 
+              AND u.is_from_me = 0 
+              AND LOWER(TRIM(u.message_text)) = ?
+            ORDER BY u.timestamp DESC, r.id ASC
+            LIMIT 1
+        """, (account_id, clean_text))
+        row = cursor.fetchone()
+        conn.close()
+        return (row[0], row[1]) if row else (None, None)
+    except Exception as e:
+        print(f"Error getting cached reply: {e}")
+        return None, None
+
 # Theme database configurations
 def init_theme_db():
     """Initializes the theme database directory and table."""

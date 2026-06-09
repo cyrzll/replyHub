@@ -73,18 +73,18 @@ class BotThread(QThread):
             is_from_me = event.Info.MessageSource.IsFromMe
 
             text = ""
-            if event.Message.conversation:
+            if event.Message.HasField('conversation'):
                 text = event.Message.conversation
-            elif event.Message.extendedTextMessage and event.Message.extendedTextMessage.text:
+            elif event.Message.HasField('extendedTextMessage') and event.Message.extendedTextMessage.text:
                 text = event.Message.extendedTextMessage.text
-            elif event.Message.imageMessage and event.Message.imageMessage.caption:
+            elif event.Message.HasField('imageMessage') and event.Message.imageMessage.caption:
                 text = event.Message.imageMessage.caption
 
             text = text.strip()
 
             media_path = None
             media_type = None
-            if event.Message.imageMessage:
+            if event.Message.HasField('imageMessage'):
                 media_type = "image"
                 try:
                     media_dir = PROJECT_DIR / "src" / "data" / "media"
@@ -179,8 +179,58 @@ class BotThread(QThread):
                 self.chat_message_saved.emit(self.account_id, chat_jid)
                 self.message_received.emit(self.account_id, sender_num, text, reply_text or "[Photo]")
             else:
-                # Check if Gemini AI is enabled for this account
-                gemini_enabled, gemini_api_key, gemini_model, gemini_instruction = db_manager.get_gemini_settings(self.account_id)
+                # Check if this exact question has been answered before in chat history
+                cached_text, cached_image = db_manager.get_cached_reply_for_message(self.account_id, text)
+                if cached_text or cached_image:
+                    log.info(f"[Account {self.account_id}] Cache found for '{text}'. Reusing previous reply.")
+                    if cached_image and os.path.exists(cached_image):
+                        try:
+                            import shutil
+                            reply_msg_id = client.generate_message_id()
+                            media_dir = PROJECT_DIR / "src" / "data" / "media"
+                            media_dir.mkdir(parents=True, exist_ok=True)
+                            media_file = media_dir / f"{reply_msg_id}.jpg"
+                            shutil.copy(cached_image, media_file)
+                            saved_media_path = str(media_file)
+                        except Exception as copy_err:
+                            log.error(f"[Account {self.account_id}] Error copying cached image: {copy_err}")
+                            saved_media_path = cached_image
+                            reply_msg_id = f"auto_img_{int(time.time()*1000)}"
+                        
+                        client.send_image(event.Info.MessageSource.Chat, cached_image, caption=cached_text or None, quoted=event)
+                        
+                        db_manager.save_chat_and_message(
+                            account_id=self.account_id,
+                            chat_jid=chat_jid,
+                            chat_name=sender_name,
+                            message_id=reply_msg_id,
+                            sender_jid="",
+                            sender_name="ReplyHub Cache",
+                            message_text=cached_text or "[Photo]",
+                            timestamp=int(time.time()),
+                            is_from_me=True,
+                            media_path=saved_media_path,
+                            media_type="image"
+                        )
+                    else:
+                        client.reply_message(cached_text, event)
+                        reply_msg_id = client.generate_message_id()
+                        db_manager.save_chat_and_message(
+                            account_id=self.account_id,
+                            chat_jid=chat_jid,
+                            chat_name=sender_name,
+                            message_id=reply_msg_id,
+                            sender_jid="",
+                            sender_name="ReplyHub Cache",
+                            message_text=cached_text,
+                            timestamp=int(time.time()),
+                            is_from_me=True
+                        )
+                    self.chat_message_saved.emit(self.account_id, chat_jid)
+                    self.message_received.emit(self.account_id, sender_num, text, cached_text or "[Photo]")
+                else:
+                    # Check if Gemini AI is enabled for this account
+                    gemini_enabled, gemini_api_key, gemini_model, gemini_instruction = db_manager.get_gemini_settings(self.account_id)
                 if gemini_enabled == 1:
                     log.info(f"[Account {self.account_id}] Invoking Gemini API for '{text}'...")
                     try:
@@ -600,7 +650,7 @@ class BotThread(QThread):
                         
                         media_type = None
                         media_path = None
-                        if hasattr(msg, "imageMessage") and msg.imageMessage:
+                        if msg and hasattr(msg, "HasField") and msg.HasField("imageMessage"):
                             media_type = "image"
                             if not text:
                                 text = "[Photo]"
