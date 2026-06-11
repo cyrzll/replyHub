@@ -32,7 +32,7 @@ Menyimpan informasi akun WhatsApp yang terhubung serta pengaturan kecerdasan bua
 | `created_at` | `TIMESTAMP` | Waktu pendaftaran akun (default: `CURRENT_TIMESTAMP`). |
 | `gemini_enabled` | `INTEGER` | Status aktif AI Gemini (`1` = Aktif, `0` = Nonaktif). |
 | `gemini_api_key` | `TEXT` | API Key Google Gemini. |
-| `gemini_model` | `TEXT` | Nama model Gemini yang digunakan (default: `gemini-1.5-flash`). |
+| `gemini_model` | `TEXT` | Nama model Gemini yang digunakan (default: `gemini-2.5-flash`). |
 | `gemini_instruction`| `TEXT` | Instruksi sistem / System Prompt untuk Gemini. |
 | `ollama_enabled` | `INTEGER` | Status aktif AI Ollama (`1` = Aktif, `0` = Nonaktif). |
 | `ollama_url` | `TEXT` | URL endpoint lokal Ollama (default: `http://localhost:11434`). |
@@ -107,6 +107,18 @@ Menyimpan aturan auto-reply berbasis kata kunci statis yang dibuat oleh user di 
 | `created_at` | `TIMESTAMP` | Waktu aturan dibuat. |
 
 * **Constraint:** `UNIQUE(account_id, keyword)`
+
+---
+
+### C. Database: `theme.db`
+
+#### 1. Tabel `settings`
+Menyimpan konfigurasi umum aplikasi, seperti pengaturan tema tampilan.
+
+| Nama Kolom | Tipe Data | Deskripsi |
+| :--- | :--- | :--- |
+| `key` | `TEXT` | Nama kunci pengaturan (contoh: "theme"), **PRIMARY KEY**. |
+| `value` | `TEXT` | Nilai dari pengaturan tersebut (contoh: "light" atau "dark"). |
 
 ---
 
